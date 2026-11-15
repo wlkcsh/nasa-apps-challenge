@@ -365,6 +365,7 @@ async def analyze_field(payload: AnalyzeFieldRequest) -> AnalyzeFieldResponse:
 
         rule_label_map = {
             "current": "Current Farm Baseline",
+            "cover": "Active Cover Crop Integration",
             "double_crop_legume": "Short-Season Nitrogen Fixer Insertion",
             "salt_tolerant": "Halophyte & Drought-Resilient Replacement",
             "green_manure": "Green Manure Bio-Drainage Cover",

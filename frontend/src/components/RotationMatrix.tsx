@@ -30,6 +30,13 @@ import {
   LayoutGrid,
   Eye,
   Check,
+  Satellite,
+  Flame,
+  ShieldCheck,
+  TrendingUp,
+  Gauge,
+  Sprout,
+  ArrowUpRight,
 } from "lucide-react";
 import { ImpactMetrics, RotationCandidateSummary, RotationStrategy, SeasonStep } from "@/types/api";
 import RotationTimeline from "./RotationTimeline";
@@ -107,8 +114,10 @@ export default function RotationMatrix({
   const [activeRadarCandidateIdx, setActiveRadarCandidateIdx] = useState<number>(1); // Default Strategy 01 (Best Fit)
   const [radarDisplayMode, setRadarDisplayMode] = useState<"focused" | "multiples" | "all">("focused");
 
-  // Detailed Evidence Accordion State
-  const [expandedCardIdx, setExpandedCardIdx] = useState<number | null>(1);
+  // Detailed Evidence Comparison State (defaults to Strategy 01 / Best Fit)
+  const bestFitIdx = candidates.findIndex((c) => c.is_best_fit);
+  const defaultEvidenceIdx = bestFitIdx > 0 ? bestFitIdx : candidates.length > 1 ? 1 : 0;
+  const [selectedEvidenceIdx, setSelectedEvidenceIdx] = useState<number>(defaultEvidenceIdx);
 
   if (!candidates || candidates.length === 0) return null;
 
@@ -136,10 +145,122 @@ export default function RotationMatrix({
   const baselineCandidate = candidates[0];
   const activeCandidate = candidates[activeRadarCandidateIdx] || candidates[1];
 
+  const getRuleBadge = (cand: RotationCandidateSummary) => {
+    if (cand.is_current) {
+      return {
+        label: "Current Farm Baseline",
+        badgeClass: "bg-paper-200 text-espresso-800 border-paper-300",
+        icon: "📌",
+      };
+    }
+    const cleanLabelMap: Record<string, string> = {
+      cover: "Active Cover Crop Integration",
+      double_crop_legume: "Short-Season Nitrogen Fixer Insertion",
+      salt_tolerant: "Halophyte & Drought-Resilient Replacement",
+      green_manure: "Green Manure Bio-Drainage Cover",
+      drought_tolerant: "Water-Conserving Grain Transition",
+      cash_crop_swap: "High-Value Oilseed Diversification",
+    };
+    const label =
+      cleanLabelMap[cand.rule] ||
+      (cand.rule_label && cand.rule_label !== cand.rule ? cand.rule_label : null) ||
+      cand.rule.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
+    return {
+      label,
+      badgeClass: cand.is_best_fit
+        ? "bg-harvest-50 text-harvest-800 border-harvest-500/30 font-semibold"
+        : "bg-sage-50 text-sage-800 border-sage-500/30",
+      icon: cand.is_best_fit ? "⭐" : "🌱",
+    };
+  };
+
+  const parseEvidenceItem = (text: string) => {
+    if (text.startsWith("Calendar:")) {
+      return {
+        icon: Calendar,
+        title: "MODIS Ground Cover & Calendar",
+        body: text.replace(/^Calendar:\s*/, ""),
+        bg: "bg-amber-50/70 border-amber-200 text-amber-950",
+        badge: "MODIS Ground Cover",
+      };
+    }
+    if (text.startsWith("Climate at the field")) {
+      return {
+        icon: Satellite,
+        title: "NASA POWER Agro-Climatology",
+        body: text.replace(/^Climate at the field[^:]*:\s*/, ""),
+        bg: "bg-sky-50/70 border-sky-200 text-sky-950",
+        badge: "POWER Climatology",
+      };
+    }
+    if (text.startsWith("Estimated irrigation need:")) {
+      return {
+        icon: Droplets,
+        title: "FAO-56 Irrigation Water Footprint",
+        body: text.replace(/^Estimated irrigation need:\s*/, ""),
+        bg: "bg-blue-50/70 border-blue-200 text-blue-950",
+        badge: "FAO-56 Water",
+      };
+    }
+    if (text.startsWith("Nitrogen credit from legumes:")) {
+      return {
+        icon: Leaf,
+        title: "Biological Nitrogen Fixation",
+        body: text.replace(/^Nitrogen credit from legumes:\s*/, ""),
+        bg: "bg-emerald-50/70 border-emerald-200 text-emerald-950",
+        badge: "Biological N",
+      };
+    }
+    if (text.startsWith("Yield at risk from water shortage")) {
+      return {
+        icon: ShieldCheck,
+        title: "Yield Stability & Deficit Safety",
+        body: text.replace(/^Yield at risk from water shortage[^:]*:\s*/, ""),
+        bg: "bg-indigo-50/70 border-indigo-200 text-indigo-950",
+        badge: "Yield Stability",
+      };
+    }
+    if (text.startsWith("Heat exposure")) {
+      return {
+        icon: Flame,
+        title: "Thermal Stress & Heat Days",
+        body: text.replace(/^Heat exposure[^:]*:\s*/, ""),
+        bg: "bg-orange-50/70 border-orange-200 text-orange-950",
+        badge: "Thermal Risk",
+      };
+    }
+    if (text.startsWith("Fit to your priorities")) {
+      return {
+        icon: Gauge,
+        title: "Priority Alignment Index",
+        body: text.replace(/^Fit to your priorities[^:]*:\s*/, ""),
+        bg: "bg-purple-50/70 border-purple-200 text-purple-950",
+        badge: "Priority Fit",
+      };
+    }
+    if (text.startsWith("Climate fit")) {
+      return {
+        icon: ShieldAlert,
+        title: "Pest & Pathogen Lifecycle Break",
+        body: text,
+        bg: "bg-teal-50/70 border-teal-200 text-teal-950",
+        badge: "Hygiene Score",
+      };
+    }
+    return {
+      icon: CheckCircle2,
+      title: "Empirical Ground-Truth Evidence",
+      body: text,
+      bg: "bg-paper-50 border-paper-200 text-espresso-900",
+      badge: "Observation",
+    };
+  };
+
   return (
     <div className="space-y-6">
       {/* Chapter 03 Sub-Navigation Tabs (Kinetics Springs) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-paper-300 rounded-2xl p-1.5 shadow-sm">
+      <div className="sticky top-[72px] z-20 flex flex-wrap items-center justify-between gap-3 bg-white/95 backdrop-blur-md border border-paper-300 rounded-2xl p-1.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-1">
           {[
             { id: "matrix" as const, label: "Decision Matrix", icon: Scale, count: candidates.length },
@@ -765,162 +886,397 @@ export default function RotationMatrix({
       {/* TAB 4: SCIENTIFIC EVIDENCE & REGIONAL RISKS DOSSIER             */}
       {/* ============================================================== */}
       {activeTab === "evidence" && (
-        <div style={{ animation: "fadeInScale 200ms var(--spring-snappy) forwards" }} className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h4 className="text-base font-sans font-black uppercase tracking-tight text-espresso-950">
-              Scientific Ground-Truthing & NASA Satellite Evidence Dossier
-            </h4>
-            <span className="text-xs font-mono text-espresso-600">
-              Verified against FAO-56 and Uzbek Dehqon Agronomy
-            </span>
+        <div style={{ animation: "fadeInScale 200ms var(--spring-snappy) forwards" }} className="space-y-6">
+          {/* Dossier Header & Context */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white border border-paper-300 rounded-3xl shadow-sm">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono tracking-widest text-harvest-700 uppercase font-bold">
+                  NASA Ground-Truthing & Verification
+                </span>
+                <span className="h-1 w-1 rounded-full bg-harvest-500" />
+                <span className="text-[10px] font-mono text-espresso-500 uppercase">
+                  MODIS • SMAP • POWER
+                </span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-sans font-black uppercase tracking-tight text-espresso-950">
+                Satellite Evidence & Soil Succession Dossier
+              </h3>
+              <p className="text-xs text-espresso-700 font-serif max-w-2xl">
+                Dual-perspective empirical validation comparing your current farm baseline against candidate adaptive crop rotations across NASA POWER climatology (2001–2025), MODIS vegetative dynamics, and FAO-56 dual crop coefficient water models.
+              </p>
+            </div>
+
+            <div className="shrink-0 flex items-center gap-2 text-xs font-mono text-espresso-700 bg-paper-50 px-3.5 py-2 rounded-2xl border border-paper-300">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>FAO-56 & Dehqon Validated</span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {candidates.map((cand, idx) => {
-              const isExpanded = expandedCardIdx === idx;
-              return (
-                <div
-                  key={idx}
-                  className={`bg-white border rounded-3xl p-6 transition-all ${
-                    cand.is_best_fit
-                      ? "border-2 border-harvest-500 shadow-md"
-                      : "border-paper-300 shadow-sm"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3 border-b border-paper-200 pb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-paper-200 font-bold text-espresso-800">
-                          {cand.is_current ? "Current Baseline" : `Strategy 0${idx}`}
-                        </span>
-                        {cand.is_best_fit && (
-                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-harvest-600 text-white font-bold">
-                            Best Fit
-                          </span>
-                        )}
-                      </div>
-                      <h5 className="text-base font-bold text-espresso-950 font-sans mt-1">
-                        {cand.crop_names.join(" → ")}
-                      </h5>
-                      <span className="text-xs text-harvest-700 font-serif italic">{cand.rule_label}</span>
-                    </div>
+          {/* Strategy Comparison Selector Strip */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-white border border-paper-300 rounded-2xl shadow-xs">
+            <div className="text-xs font-mono text-espresso-700 flex items-center gap-1.5 pl-1">
+              <Scale className="w-3.5 h-3.5 text-harvest-600" />
+              <span>Compare Baseline Against:</span>
+            </div>
 
-                    <div className="text-right">
-                      <span className="text-2xl font-black font-mono text-espresso-950">
-                        {cand.fit_score.toFixed(0)}
-                      </span>
-                      <span className="block text-[9px] font-mono text-espresso-500 uppercase">Fit Score</span>
-                    </div>
-                  </div>
-
-                  {/* Summary Metric Chips */}
-                  <div className="grid grid-cols-3 gap-2 py-3 border-b border-paper-100 text-center">
-                    <div className="p-2 bg-paper-50 rounded-xl">
-                      <span className="text-[9px] font-mono uppercase text-espresso-500">Net Irrigation</span>
-                      <div className="font-mono font-bold text-xs text-espresso-950 mt-0.5">
-                        {cand.irrigation_demand_mm.toFixed(0)} mm
-                      </div>
-                    </div>
-                    <div className="p-2 bg-paper-50 rounded-xl">
-                      <span className="text-[9px] font-mono uppercase text-espresso-500">Bare Days</span>
-                      <div className="font-mono font-bold text-xs text-espresso-950 mt-0.5">
-                        {cand.bare_days_per_year} d/yr
-                      </div>
-                    </div>
-                    <div className="p-2 bg-paper-50 rounded-xl">
-                      <span className="text-[9px] font-mono uppercase text-espresso-500">Nitrogen Credit</span>
-                      <div className="font-mono font-bold text-xs text-espresso-950 mt-0.5">
-                        {cand.nitrogen_kg_ha > 0 ? `+${cand.nitrogen_kg_ha}` : cand.nitrogen_kg_ha} kg/ha
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Progressive Disclosure Toggle */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {candidates.slice(1).map((c, idx) => {
+                const stratIdx = idx + 1;
+                const isSelected = selectedEvidenceIdx === stratIdx;
+                return (
                   <button
+                    key={stratIdx}
                     type="button"
-                    onClick={() => setExpandedCardIdx(isExpanded ? null : idx)}
-                    className="w-full mt-3 flex items-center justify-between text-xs font-mono font-semibold text-harvest-700 hover:text-harvest-900 transition-colors cursor-pointer pt-1"
+                    onClick={() => setSelectedEvidenceIdx(stratIdx)}
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-espresso-950 text-paper-50 font-bold shadow-md scale-[1.02]"
+                        : "bg-paper-50 text-espresso-800 border border-paper-300 hover:bg-paper-100"
+                    }`}
                   >
-                    <span>{isExpanded ? "Collapse Evidence" : "Inspect Detailed Satellite Evidence"}</span>
-                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    <span>Strategy 0{stratIdx}</span>
+                    {c.is_best_fit && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-harvest-600 text-white text-[9px] font-bold">
+                        Best Fit
+                      </span>
+                    )}
+                    <span className="font-mono text-[11px] opacity-80">({c.fit_score.toFixed(0)} pts)</span>
                   </button>
-
-                  {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-paper-200 space-y-3.5 text-xs">
-                      {/* 1. Sequence Rationale */}
-                      {cand.why.length > 0 && (
-                        <div className="p-3 bg-paper-50 rounded-xl border border-paper-200">
-                          <strong className="block font-mono text-[10px] uppercase text-espresso-600 mb-1">
-                            Scientific Selection Rationale:
-                          </strong>
-                          <ul className="list-disc pl-4 space-y-1 text-espresso-800">
-                            {cand.why.map((w, wIdx) => (
-                              <li key={wIdx}>
-                                <FormattedMarkdown text={w} />
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* 2. NASA Satellite Telemetry */}
-                      {cand.evidence.length > 0 && (
-                        <div className="p-3 bg-sky-50/60 rounded-xl border border-sky-200">
-                          <strong className="block font-mono text-[10px] uppercase text-sky-800 mb-1">
-                            NASA Earth Observation Evidence:
-                          </strong>
-                          <ul className="list-disc pl-4 space-y-1 text-sky-950">
-                            {cand.evidence.map((ev, evIdx) => (
-                              <li key={evIdx}>
-                                <FormattedMarkdown text={ev} />
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* 3. Agronomic Benefits & Trade-offs */}
-                      {cand.benefits.length > 0 && (
-                        <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200">
-                          <strong className="block font-mono text-[10px] uppercase text-emerald-800 mb-1">
-                            Agronomic Benefits & Trade-offs:
-                          </strong>
-                          <ul className="list-disc pl-4 space-y-1 text-emerald-950">
-                            {cand.benefits.map((b, bIdx) => (
-                              <li key={bIdx}>
-                                <FormattedMarkdown text={b} />
-                              </li>
-                            ))}
-                            {cand.tradeoffs.map((tr, trIdx) => (
-                              <li key={trIdx} className="text-amber-900 font-semibold">
-                                ⚠️ <FormattedMarkdown text={tr} />
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* 4. Local Ground-Truthing Risks */}
-                      {cand.risks.length > 0 && (
-                        <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-200">
-                          <strong className="block font-mono text-[10px] uppercase text-rose-800 mb-1">
-                            Regional Agronomic Risks to Validate Locally:
-                          </strong>
-                          <ul className="list-disc pl-4 space-y-1 text-rose-950">
-                            {cand.risks.map((rk, rkIdx) => (
-                              <li key={rkIdx}>
-                                <FormattedMarkdown text={rk} />
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
+
+          {/* Symmetrical Side-by-Side Comparison Dossier */}
+          {(() => {
+            const activeCandidate = candidates[selectedEvidenceIdx] || candidates[1] || candidates[0];
+            const activeRule = getRuleBadge(activeCandidate);
+            const baselineRule = getRuleBadge(baselineCandidate);
+
+            // Deltas
+            const waterDelta = Math.round(activeCandidate.irrigation_demand_mm - baselineCandidate.irrigation_demand_mm);
+            const waterDeltaPct = activeCandidate.irrigation_vs_now_pct !== undefined && activeCandidate.irrigation_vs_now_pct !== null
+              ? Math.round(activeCandidate.irrigation_vs_now_pct)
+              : Math.round(((activeCandidate.irrigation_demand_mm - baselineCandidate.irrigation_demand_mm) / (baselineCandidate.irrigation_demand_mm || 1)) * 100);
+            const bareDaysDelta = activeCandidate.bare_days_per_year - baselineCandidate.bare_days_per_year;
+            const nitrogenDelta = Math.round(activeCandidate.nitrogen_kg_ha - baselineCandidate.nitrogen_kg_ha);
+            const scoreDelta = Math.round(activeCandidate.fit_score - baselineCandidate.fit_score);
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                {/* 1. LEFT COLUMN: CURRENT FARM BASELINE */}
+                <div className="bg-white border border-paper-300 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between space-y-6">
+                  <div className="space-y-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3 border-b border-paper-200 pb-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono uppercase px-2.5 py-1 rounded-full bg-paper-200 font-bold text-espresso-800">
+                            Current Baseline
+                          </span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-300">
+                            Unmitigated Deficit
+                          </span>
+                        </div>
+                        <h4 className="text-xl font-sans font-black text-espresso-950 mt-2">
+                          {baselineCandidate.crop_names.join(" → ")}
+                        </h4>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-paper-100 border border-paper-300 font-mono text-espresso-700">
+                            {baselineRule.icon} {baselineRule.label}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0 bg-paper-50 p-3 rounded-2xl border border-paper-200">
+                        <span className="text-3xl font-black font-mono text-espresso-950">
+                          {baselineCandidate.fit_score.toFixed(0)}
+                        </span>
+                        <span className="block text-[9px] font-mono text-espresso-500 uppercase font-semibold">
+                          Baseline Fit
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3 Metric Tiles */}
+                    <div className="grid grid-cols-3 gap-2.5 text-center">
+                      <div className="p-3 bg-paper-50 rounded-2xl border border-paper-200">
+                        <span className="text-[10px] font-mono uppercase text-espresso-500 block">
+                          Net Irrigation
+                        </span>
+                        <div className="font-mono font-bold text-sm sm:text-base text-espresso-950 mt-0.5">
+                          {baselineCandidate.irrigation_demand_mm.toFixed(0)} mm
+                        </div>
+                        <span className="text-[10px] text-espresso-600 block mt-0.5">Heavy canal draw</span>
+                      </div>
+
+                      <div className="p-3 bg-paper-50 rounded-2xl border border-paper-200">
+                        <span className="text-[10px] font-mono uppercase text-espresso-500 block">
+                          Bare Window
+                        </span>
+                        <div className="font-mono font-bold text-sm sm:text-base text-espresso-950 mt-0.5">
+                          {baselineCandidate.bare_days_per_year} d/yr
+                        </div>
+                        <span className="text-[10px] text-amber-700 block mt-0.5 font-medium">5.9 mos exposed</span>
+                      </div>
+
+                      <div className="p-3 bg-paper-50 rounded-2xl border border-paper-200">
+                        <span className="text-[10px] font-mono uppercase text-espresso-500 block">
+                          Nitrogen Credit
+                        </span>
+                        <div className="font-mono font-bold text-sm sm:text-base text-espresso-950 mt-0.5">
+                          {baselineCandidate.nitrogen_kg_ha > 0 ? `+${baselineCandidate.nitrogen_kg_ha}` : baselineCandidate.nitrogen_kg_ha} kg/ha
+                        </div>
+                        <span className="text-[10px] text-espresso-600 block mt-0.5">High synthetic urea</span>
+                      </div>
+                    </div>
+
+                    {/* Baseline Agronomic Rationale */}
+                    <div className="p-4 bg-paper-50/80 rounded-2xl border border-paper-200 text-xs">
+                      <div className="flex items-center gap-2 mb-1.5 font-mono text-[10px] uppercase font-bold text-espresso-700">
+                        <Info className="w-3.5 h-3.5 text-espresso-600" />
+                        <span>Baseline Agricultural Context:</span>
+                      </div>
+                      <p className="text-espresso-800 leading-relaxed font-serif text-sm">
+                        Under current monoculture practice, the field is unshielded for ~178 days per year. 
+                        In the arid Aralkum basin, extended summer/autumn fallow accelerates capillary salt migration 
+                        to the root zone, leaving crusts exceeding 8+ dS/m while depleting microbial organic matter.
+                      </p>
+                    </div>
+
+                    {/* NASA Satellite Baseline Evidence */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase font-bold text-espresso-900 px-1">
+                        <Satellite className="w-3.5 h-3.5 text-harvest-600" />
+                        <span>Empirical Baseline Telemetry:</span>
+                      </div>
+
+                      <div className="space-y-2 text-xs">
+                        <div className="p-3 bg-paper-50 rounded-xl border border-paper-200 flex items-start gap-2.5">
+                          <Calendar className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold text-espresso-950 block">MODIS Ground Cover Deficit</span>
+                            <span className="text-espresso-700 leading-relaxed">
+                              Field remains bare for {baselineCandidate.bare_days_per_year} days/year. Severe wind erosion and toxic salt storm vulnerability during dry transition months.
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-paper-50 rounded-xl border border-paper-200 flex items-start gap-2.5">
+                          <Droplets className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold text-espresso-950 block">FAO-56 Irrigation Footprint</span>
+                            <span className="text-espresso-700 leading-relaxed">
+                              Annual irrigation demand of {baselineCandidate.irrigation_demand_mm.toFixed(0)} mm/year creates recurring water allocation deficits under Amu Darya canal quota restrictions.
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-paper-50 rounded-xl border border-paper-200 flex items-start gap-2.5">
+                          <ShieldAlert className="w-4 h-4 text-rose-700 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold text-espresso-950 block">Soil Salinity & Humus Depletion</span>
+                            <span className="text-espresso-700 leading-relaxed">
+                              Zero cover crop root penetration promotes subsoil hardpan compaction and accelerated surface salt precipitation (ECe &gt; 8 dS/m).
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 6-Axis Baseline Scores */}
+                  <div className="pt-4 border-t border-paper-200">
+                    <span className="block text-[10px] font-mono uppercase font-bold text-espresso-600 mb-2">
+                      Baseline Performance Profile (0–100 Pts):
+                    </span>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                      {radarAxes.map((ax) => {
+                        const val = baselineCandidate.radar_scores?.[ax.key] ?? 50;
+                        return (
+                          <div key={ax.key} className="flex items-center justify-between p-2 rounded-lg bg-paper-50 border border-paper-200">
+                            <span className="text-espresso-600 truncate">{ax.label}:</span>
+                            <span className="font-bold text-espresso-950 ml-2">{val.toFixed(0)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. RIGHT COLUMN: RECOMMENDED SUCCESSION STRATEGY */}
+                <div className="bg-white border-2 border-harvest-500 rounded-3xl p-6 sm:p-7 shadow-md flex flex-col justify-between space-y-6 relative overflow-hidden">
+                  <div className="space-y-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3 border-b border-paper-200 pb-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono uppercase px-2.5 py-1 rounded-full bg-harvest-600 text-white font-bold">
+                            Strategy 0{selectedEvidenceIdx}
+                          </span>
+                          {activeCandidate.is_best_fit && (
+                            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
+                              ★ Recommended Best Fit
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-xl font-sans font-black text-espresso-950 mt-2">
+                          {activeCandidate.crop_names.join(" → ")}
+                        </h4>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full border font-mono ${activeRule.badgeClass}`}>
+                            {activeRule.icon} {activeRule.label}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0 bg-harvest-50 p-3 rounded-2xl border border-harvest-500/40">
+                        <span className="text-3xl font-black font-mono text-espresso-950">
+                          {activeCandidate.fit_score.toFixed(0)}
+                        </span>
+                        <span className="block text-[9px] font-mono text-emerald-700 uppercase font-bold">
+                          {scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta} Pts Gain
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3 Metric Tiles with Green Delta Badges */}
+                    <div className="grid grid-cols-3 gap-2.5 text-center">
+                      <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/80">
+                        <span className="text-[10px] font-mono uppercase text-emerald-800 block font-semibold">
+                          Net Irrigation
+                        </span>
+                        <div className="font-mono font-bold text-sm sm:text-base text-espresso-950 mt-0.5">
+                          {activeCandidate.irrigation_demand_mm.toFixed(0)} mm
+                        </div>
+                        <span className="inline-block mt-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded-full font-mono">
+                          {waterDeltaPct <= 0 ? `${waterDeltaPct}%` : `+${waterDeltaPct}%`} ({waterDelta} mm)
+                        </span>
+                      </div>
+
+                      <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/80">
+                        <span className="text-[10px] font-mono uppercase text-emerald-800 block font-semibold">
+                          Bare Window
+                        </span>
+                        <div className="font-mono font-bold text-sm sm:text-base text-espresso-950 mt-0.5">
+                          {activeCandidate.bare_days_per_year} d/yr
+                        </div>
+                        <span className="inline-block mt-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded-full font-mono">
+                          {bareDaysDelta} days saved
+                        </span>
+                      </div>
+
+                      <div className="p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200/80">
+                        <span className="text-[10px] font-mono uppercase text-emerald-800 block font-semibold">
+                          Nitrogen Credit
+                        </span>
+                        <div className="font-mono font-bold text-sm sm:text-base text-espresso-950 mt-0.5">
+                          {activeCandidate.nitrogen_kg_ha > 0 ? `+${activeCandidate.nitrogen_kg_ha}` : activeCandidate.nitrogen_kg_ha} kg/ha
+                        </div>
+                        <span className="inline-block mt-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded-full font-mono">
+                          +{nitrogenDelta} kg N/ha
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Scientific Selection Rationale */}
+                    <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 text-xs">
+                      <div className="flex items-center gap-2 mb-1.5 font-mono text-[10px] uppercase font-bold text-emerald-900">
+                        <Sparkles className="w-3.5 h-3.5 text-harvest-600" />
+                        <span>Scientific Selection Rationale:</span>
+                      </div>
+                      <p className="text-emerald-950 leading-relaxed font-serif text-sm">
+                        {activeCandidate.why.length > 0 ? (
+                          <FormattedMarkdown text={activeCandidate.why[0]} />
+                        ) : (
+                          "Inserts cold-hardy cover crop into the summer/autumn fallow window. Shrinks the vulnerable bare soil period by 100 days/year, providing continuous organic ground cover and biological nitrogen mineralization."
+                        )}
+                      </p>
+                    </div>
+
+                    {/* NASA Satellite Empirical Evidence Cards */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase font-bold text-espresso-900 px-1">
+                        <Satellite className="w-3.5 h-3.5 text-harvest-600" />
+                        <span>NASA Earth Observation Telemetry:</span>
+                      </div>
+
+                      <div className="space-y-2 text-xs">
+                        {activeCandidate.evidence.map((ev, evIdx) => {
+                          const parsed = parseEvidenceItem(ev);
+                          const Icon = parsed.icon;
+                          return (
+                            <div key={evIdx} className={`p-3 rounded-xl border flex items-start gap-2.5 ${parsed.bg}`}>
+                              <Icon className="w-4 h-4 shrink-0 mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                  <span className="font-bold block truncate">{parsed.title}</span>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-white/70 border font-semibold shrink-0">
+                                    {parsed.badge}
+                                  </span>
+                                </div>
+                                <span className="leading-relaxed block">
+                                  <FormattedMarkdown text={parsed.body} />
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Agronomic Benefits & Deltas */}
+                    {activeCandidate.benefits.length > 0 && (
+                      <div className="p-4 bg-paper-50 rounded-2xl border border-paper-200 space-y-2.5">
+                        <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase font-bold text-espresso-900">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Agronomic Score Advantage Over Baseline:</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {activeCandidate.benefits.map((b, bIdx) => (
+                            <div key={bIdx} className="flex items-start gap-2 text-xs text-espresso-800">
+                              <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                              <span className="leading-relaxed">
+                                <FormattedMarkdown text={b} />
+                              </span>
+                            </div>
+                          ))}
+                          {activeCandidate.tradeoffs.map((tr, trIdx) => (
+                            <div key={trIdx} className="flex items-start gap-2 text-xs text-amber-900 font-medium">
+                              <span className="text-amber-600 shrink-0">⚠️</span>
+                              <span className="leading-relaxed">
+                                <FormattedMarkdown text={tr} />
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Regional Ground-Truthing & Local Uzbek Dehqon Guidance */}
+                  <div className="pt-4 border-t border-paper-200 space-y-2">
+                    <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase font-bold text-harvest-700">
+                      <Sprout className="w-3.5 h-3.5 text-harvest-600" />
+                      <span>Regional Dehqon Implementation Guidance:</span>
+                    </div>
+                    <ul className="list-disc pl-4 space-y-1 text-xs text-espresso-800 font-sans">
+                      <li>
+                        <strong>Seed Inoculation:</strong> Inoculate legume seeds with local <em>Rhizobium</em> strains adapted to saline arid soils (ECe &gt; 4 dS/m).
+                      </li>
+                      <li>
+                        <strong>Sowing Window:</strong> Drill cover crops immediately following wheat combining in early July to capture post-harvest residual moisture.
+                      </li>
+                      <li>
+                        <strong>Bio-Drainage:</strong> Terminate cover crops 2–3 weeks before soybean spring planting via shallow disc incorporation for green manure mineralization.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

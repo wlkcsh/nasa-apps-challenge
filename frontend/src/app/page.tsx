@@ -78,6 +78,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [shouldFlyTo, setShouldFlyTo] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<string>("overview");
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const lockedSectionRef = useRef<string | null>(null);
   const lockTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navContainerRef = useRef<HTMLElement>(null);
@@ -145,6 +146,8 @@ export default function DashboardPage() {
     const sectionIds = ["overview", "engine", "rotation", "climatology"];
 
     const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+
       // While locked onto a clicked chapter, intermediate sections are prevented from hijacking the pill
       if (lockedSectionRef.current) {
         const targetEl = document.getElementById(lockedSectionRef.current);
@@ -288,7 +291,13 @@ export default function DashboardPage() {
       {/* <IntroGate /> */}
 
       {/* 1. FLOATING NAVIGATION BAR (Delta Cafés Colontitle Style) */}
-      <header className="fixed top-0 left-0 right-0 z-50 p-3 sm:p-4 pointer-events-none transition-opacity duration-500">
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "py-2 sm:py-2.5 px-3 sm:px-6 bg-paper-100/90 backdrop-blur-md border-b border-paper-300/80 shadow-xs pointer-events-auto"
+            : "p-3 sm:p-4 bg-transparent pointer-events-none"
+        }`}
+      >
         <div className="max-w-[1680px] mx-auto flex items-center justify-between gap-3">
           {/* Brand Kicker with Mission Seal Pill */}
           <div className="pointer-events-auto flex items-center gap-2.5 bg-white/95 border border-paper-300 px-3.5 py-2 rounded-full shadow-md backdrop-blur-md">
@@ -385,7 +394,7 @@ export default function DashboardPage() {
       {/* 2. GRAND EDITORIAL HERO (Delta Cafés Bürocratik Scale) */}
       <section
         id="overview"
-        className="relative min-h-[92dvh] flex flex-col justify-between pt-24 pb-12 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300"
+        className="relative min-h-[92dvh] flex flex-col justify-between pt-24 pb-12 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300 scroll-mt-24"
       >
         {/* Top Eyebrow Strip */}
         <div className="flex items-center justify-between gap-4 pt-6 border-t border-paper-300">
@@ -524,7 +533,7 @@ export default function DashboardPage() {
       <section
         id="engine"
         ref={engineSectionRef}
-        className="py-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300 w-full max-w-full min-w-0"
+        className="py-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300 w-full max-w-full min-w-0 scroll-mt-24"
       >
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-8 w-full max-w-full min-w-0">
           <div className="shrink-0">
@@ -596,7 +605,7 @@ export default function DashboardPage() {
       {/* 5. CHAPTER 03: THE 4 CORE AGRO-STAT PILLARS & 3-YEAR ROTATION PLAN */}
       <section
         id="rotation"
-        className="border-b border-paper-300 w-full max-w-full min-w-0"
+        className="border-b border-paper-300 w-full max-w-full min-w-0 scroll-mt-24"
       >
         <div className="pt-16 pb-8 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-harvest-100 border border-harvest-500/30 text-[10px] font-mono text-harvest-700 uppercase tracking-widest mb-2 font-semibold">
@@ -635,7 +644,7 @@ export default function DashboardPage() {
       {/* 6. CHAPTER 04: AGRO-CLIMATOLOGY TRENDS & 2035 SIMULATOR */}
       <section
         id="climatology"
-        className="py-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300 w-full max-w-full min-w-0"
+        className="py-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300 w-full max-w-full min-w-0 scroll-mt-24"
       >
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-harvest-100 border border-harvest-500/30 text-[10px] font-mono text-harvest-700 uppercase tracking-widest mb-2 font-semibold">
