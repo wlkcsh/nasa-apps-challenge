@@ -405,18 +405,20 @@ export default function DashboardPage() {
         </div>
 
         {/* Colossal Display Statement (Delta Cafés Headline Scale) */}
-        <div className="my-auto py-10 relative">
-          {/* Rotating Mission Seal in Upper Corner */}
-          <div className="absolute -top-4 right-2 sm:right-6 lg:right-12 hidden md:block">
-            <MissionSeal size={140} />
-          </div>
+        <div className="my-auto py-8 sm:py-10 relative">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 lg:gap-8">
+            <h1 className="text-4xl sm:text-6xl md:text-[4.75rem] lg:text-[5.5rem] xl:text-[6.5rem] 2xl:text-[7.75rem] font-black uppercase tracking-tighter leading-[0.88] text-espresso-950 flex-1 min-w-0">
+              Turning Arid Dust <br />
+              <span className="font-serif italic font-normal text-harvest-600 tracking-tight">
+                into Living Fields.
+              </span>
+            </h1>
 
-          <h1 className="text-5xl sm:text-7xl lg:text-[7.25rem] xl:text-[8.5rem] font-black uppercase tracking-tighter leading-[0.88] text-espresso-950 max-w-[1500px]">
-            Turning Arid Dust <br />
-            <span className="font-serif italic font-normal text-harvest-600 tracking-tight">
-              into Living Fields.
-            </span>
-          </h1>
+            {/* Rotating Mission Seal in Upper Corner (Clean Non-Colliding Layout) */}
+            <div className="hidden md:flex flex-col items-center justify-center shrink-0 pt-1 lg:pt-2">
+              <MissionSeal size={124} />
+            </div>
+          </div>
 
           <div className="mt-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
             <p className="md:col-span-7 text-base sm:text-lg lg:text-xl text-espresso-700 font-serif leading-relaxed">
