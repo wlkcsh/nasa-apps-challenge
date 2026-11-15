@@ -1,5 +1,13 @@
 # Field Shift UZ: Adapting Farms with NASA Data
 
+[![CI](https://github.com/wlkcsh/nasa-apps-challenge/actions/workflows/ci.yml/badge.svg)](https://github.com/wlkcsh/nasa-apps-challenge/actions/workflows/ci.yml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![NASA Space Apps](https://img.shields.io/badge/NASA%20Space%20Apps-2026-0B3D91.svg?logo=nasa&logoColor=white)](https://www.spaceappschallenge.org/)
+
 > An intelligent, farmer-centered decision-support system built for the **NASA Space Apps Challenge 2026**.  
 > Fuses NASA Earth observations with regional agronomic parameters to empower farmers to explore resilient crop rotations, conserve water, and restore soil capital.
 
@@ -30,6 +38,36 @@ Detailed engineering specifications and component layouts are documented in [**`
 ---
 
 ## 🛠️ Architecture & Tech Stack
+
+```mermaid
+flowchart TD
+    subgraph DataSources["🛰️ Earth Observation & Agronomic Data"]
+        POWER["NASA POWER API<br/>(Solar radiation, T2M, ET0)"]
+        SOIL["SoilGrids REST API<br/>(Texture, pH, Salinity, SOC)"]
+        GIBS["NASA GIBS Raster<br/>(NDVI, GPM Precip, SMAP)"]
+        EONET["NASA EONET<br/>(Natural Hazards & Droughts)"]
+    end
+
+    subgraph Backend["⚙️ FastAPI Decision Engine (:8000)"]
+        ROUTER["API Router (/api/analyze-field)"]
+        FIELDSHIFT["FieldShift Scientific Engine<br/>(Water balance, heat stress, OM & N dynamics)"]
+        CACHE["Committed Demo Cache<br/>(Fergana, Kansas, Karakalpakstan)"]
+        ROUTER --> FIELDSHIFT
+        FIELDSHIFT <--> CACHE
+        POWER & SOIL & GIBS & EONET --> FIELDSHIFT
+    end
+
+    subgraph Frontend["🌾 Next.js 14 Dashboard (:3000)"]
+        MAP["Farm Map (Leaflet)"]
+        HERO["Planetary 3D View (Three.js)"]
+        CHARTS["Climate & Stress Charts (Recharts)"]
+        TIMELINE["3-Strategy Comparator<br/>(Baseline vs Drought vs Soil Health)"]
+    end
+
+    Backend --> Frontend
+```
+
+### Directory Structure
 
 ```text
 nasa-apps-challenge/
