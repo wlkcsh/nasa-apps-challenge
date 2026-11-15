@@ -19,20 +19,41 @@ export const GLOW_COLORS = [
 ] as const;
 
 // Scroll-driven tunables
-export const PIN_VH = 500;
-export const SCRUB = 0.8;
+export const PIN_VH = 540;
+export const SCRUB = 0.65;
+
+// Freight-style Non-Linear "Knee" Scroll Pacing:
+// First 64% of physical scroll maps to the first 52% of timeline (liftoff + deliberate letter-splitting cruise).
+// Remaining 36% of physical scroll accelerates through Mars landing, baseline settle, and badge morph.
+export const SCROLL_KNEE = {
+  input: 0.64,
+  output: 0.52,
+} as const;
+
+export function remapScrollWithKnee(raw: number): number {
+  const x = Math.max(0, Math.min(1, raw));
+  const { input: kIn, output: kOut } = SCROLL_KNEE;
+  if (x <= kIn) {
+    const t = x / kIn;
+    // Gentle ease-out into the reading cruise zone
+    return kOut * (t * (1.15 - 0.15 * t));
+  }
+  const t = (x - kIn) / (1 - kIn);
+  // Smooth acceleration into Mars arrival & morph
+  return kOut + (1 - kOut) * (t * t * (3 - 2 * t) * 0.35 + t * 0.65);
+}
 
 export const LETTER_RAMP = {
-  landscape: 0.12,
-  portrait: 0.08,
+  landscape: 0.085,
+  portrait: 0.075,
 } as const;
 
 export const P_NOMINAL = {
-  landscape: [0.24, 0.34, 0.44, 0.54] as const,
-  portrait: [0.22, 0.34, 0.46, 0.58] as const,
+  landscape: [0.22, 0.32, 0.42, 0.52] as const,
+  portrait: [0.20, 0.32, 0.44, 0.56] as const,
 } as const;
 
-export const P_RAMP = 0.06;
+export const P_RAMP = 0.055;
 export const HOLD = 0.3;
 export const CANVAS_DIM = 0.3;
 export const NUDGE_DELAY_MS = 4000;
@@ -67,7 +88,8 @@ export const EASINGS = {
   EASE_SETTLE: "power3.inOut",
 } as const;
 
-// Displacement magnitudes in em for landscape vs portrait
+// Initial = 0.0 so FHTM starts as a unified compact horizontal monogram on the center flight axis,
+// then splits vertically (±0.72em) as the rocket slices horizontally through each letter.
 export const LETTER_DISP = {
   landscape: {
     initial: 0.0,
@@ -79,11 +101,10 @@ export const LETTER_DISP = {
   },
 } as const;
 
-// F and T are negative (-1: up in landscape, left in portrait);
-// H and M are positive (+1: down in landscape, right in portrait).
+// F and T are negative (-1: pushed UP in landscape, LEFT in portrait);
+// H and M are positive (+1: pushed DOWN in landscape, RIGHT in portrait).
 export const LETTER_SIGNS = [-1, 1, -1, 1] as const;
 
-// Portrait & landscape both fire in reading order F (0), H (1), T (2), M (3) with dir = +1
 export const LAYOUT_PARAMS = {
   landscape: {
     axis: "x" as const,
@@ -98,7 +119,7 @@ export const LAYOUT_PARAMS = {
 } as const;
 
 export const TAIL_STAGGER = 0.04;
-export const DIM_OPACITY = 0.55;
+export const DIM_OPACITY = 0.85;
 
 export const DPR_MAX = {
   landscape: 2,
@@ -138,5 +159,5 @@ export const TASHKENT = {
 } as const;
 
 export const DEFAULT_TAGLINE =
-  "Satellite-driven crop rotation and soil intelligence - from Uzbekistan's Aral Sea basin to Martian regolith.";
+  "Climate-adaptive crop rotation powered by NASA Earth observations";
 export const DEFAULT_CTA_HREF = "#farm-map";

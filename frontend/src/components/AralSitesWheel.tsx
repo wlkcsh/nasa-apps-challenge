@@ -29,11 +29,11 @@ interface AralSitesWheelProps {
 }
 
 // Geometric & Mathematical Constants based on works-wheel-3d
-const STEP = 42; // Degrees between successive cards on the drum
-const DRUM_R = 360; // Cylinder radius in px
-const BOW = 85; // Lateral parabolic bow offset in px
-const DAMPING = 0.12; // Inertial lerp decay factor
-const FRUSTUM_CUTOFF = 85; // Angular cutoff in degrees for frustum culling
+const STEP = 40; // Degrees between successive cards on the drum
+const DRUM_R = 250; // Proportional cylinder radius in px (tuned to fit cleanly within viewport)
+const BOW = 24; // Subtle organic lateral curve without extreme horizontal drift
+const DAMPING = 0.14; // Inertial lerp decay factor
+const FRUSTUM_CUTOFF = 75; // Angular cutoff in degrees for frustum culling
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
 const bowAt = (drumDeg: number, bow: number) =>
@@ -250,7 +250,7 @@ export default function AralSitesWheel({
   const activePreset = presets[activeIndex] || presets[0];
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className="w-full max-w-full min-w-0 flex flex-col gap-4 overflow-hidden">
       {/* Reel HUD Header & Viewport Mode Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-1 py-1">
         <div className="flex items-center gap-2">
@@ -309,15 +309,15 @@ export default function AralSitesWheel({
           />
 
           {/* Top HUD Telemetry Strip */}
-          <div className="relative z-20 flex items-center justify-between p-4 sm:p-6 border-b border-white/[0.08] backdrop-blur-md bg-espresso-950/40 text-[11px] font-mono text-bone-300">
-            <div className="flex items-center gap-2">
+          <div className="relative z-20 flex items-center justify-between p-4 sm:p-5 border-b border-white/10 backdrop-blur-md bg-espresso-950/70 text-[11px] font-mono">
+            <div className="flex items-center gap-2 text-paper-100 font-semibold tracking-wide">
               <Compass className="w-3.5 h-3.5 text-harvest-400" />
               <span>
                 {activePreset?.lat.toFixed(4)}°N, {activePreset?.lon.toFixed(4)}°E
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-harvest-500/20 text-harvest-300 border border-harvest-500/30 text-[10px] font-bold">
+              <span className="px-2.5 py-1 rounded-full bg-harvest-500/20 text-harvest-400 border border-harvest-500/40 text-[10px] font-bold tracking-wider">
                 {activePreset?.default_salinity.toUpperCase()} SALINITY
               </span>
             </div>
@@ -332,12 +332,12 @@ export default function AralSitesWheel({
             onPointerCancel={handlePointerUp}
             className="relative z-10 w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
             style={{
-              perspective: "1150px",
+              perspective: "1100px",
               perspectiveOrigin: "50% 50%",
             }}
           >
             <div
-              className="relative w-[340px] sm:w-[420px] h-[310px] flex items-center justify-center"
+              className="relative w-[310px] sm:w-[390px] h-[260px] flex items-center justify-center"
               style={{
                 transformStyle: "preserve-3d",
               }}
@@ -354,9 +354,9 @@ export default function AralSitesWheel({
                       spinToIndex(idx);
                       onSelectPreset(preset);
                     }}
-                    className={`absolute inset-0 rounded-2xl p-6 sm:p-7 flex flex-col justify-between transition-colors duration-200 border backdrop-blur-xl ${
+                    className={`absolute inset-0 rounded-2xl p-5 sm:p-6 flex flex-col justify-between transition-all duration-300 border backdrop-blur-xl ${
                       isSelected
-                        ? "bg-stone-900/95 border-harvest-500 shadow-[0_0_35px_rgba(200,155,60,0.3)] ring-1 ring-harvest-500/50"
+                        ? "bg-stone-900/95 border-harvest-500 shadow-[0_0_30px_rgba(200,155,60,0.25)] ring-1 ring-harvest-500/50"
                         : "bg-stone-950/85 border-white/10 hover:border-harvest-500/40"
                     }`}
                     style={{
@@ -365,7 +365,7 @@ export default function AralSitesWheel({
                     }}
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
                         <span className="text-[10px] font-mono tracking-widest text-harvest-400 uppercase font-semibold">
                           {preset.region}
                         </span>
@@ -374,16 +374,16 @@ export default function AralSitesWheel({
                         </span>
                       </div>
 
-                      <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-sans">
+                      <h3 className="text-lg sm:text-xl font-black text-white uppercase tracking-tight font-sans">
                         {preset.name}
                       </h3>
 
-                      <p className="mt-2 text-xs sm:text-sm text-stone-300 font-serif leading-relaxed line-clamp-3">
+                      <p className="mt-2 text-xs sm:text-sm text-stone-300 font-sans leading-relaxed line-clamp-3">
                         {preset.description}
                       </p>
                     </div>
 
-                    <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs font-mono">
+                    <div className="pt-3.5 border-t border-white/10 flex items-center justify-between text-xs font-mono">
                       <div className="flex items-center gap-3 text-stone-400 text-[11px]">
                         <span>NDVI: {(preset.modis_mean_ndvi || 0.18).toFixed(2)}</span>
                         <span>•</span>
@@ -400,7 +400,7 @@ export default function AralSitesWheel({
                           onSelectPreset(preset);
                           onLaunchCockpit?.();
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-harvest-500 hover:bg-harvest-400 text-espresso-950 font-bold text-[11px] tracking-wide transition-all shadow-md active:scale-95"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-harvest-500 hover:bg-harvest-400 text-espresso-950 font-bold text-[11px] tracking-wide transition-all shadow-md active:scale-95 cursor-pointer"
                       >
                         <span>Cockpit</span>
                         <ArrowRight className="w-3 h-3" />
@@ -469,7 +469,7 @@ export default function AralSitesWheel({
                   </span>
                 </div>
 
-                <p className="text-xs text-espresso-600 font-serif line-clamp-2 mb-3">
+                <p className="text-xs text-espresso-600 font-sans line-clamp-2 mb-3">
                   {preset.description}
                 </p>
 

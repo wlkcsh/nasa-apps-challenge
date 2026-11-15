@@ -55,8 +55,8 @@ const FhtmPhrase = forwardRef<HTMLDivElement, FhtmPhraseProps>(
           const wordTransform = staticPoster
             ? "none"
             : isPortrait
-            ? "translate3d(calc((var(--stack-x, 0px) + var(--disp, 0) * 1em) * (1 - var(--settle, 0))), calc(var(--stack-y, 0px) * (1 - var(--settle, 0))), 0px)"
-            : "translate3d(0px, calc(var(--disp, 0) * (1 - var(--settle, 0)) * 1em), 0px)";
+            ? "translate3d(calc((var(--stack-x, 0px) + var(--kick-x, 0px) + var(--disp, 0) * 1em) * (1 - var(--settle, 0))), calc(var(--stack-y, 0px) * (1 - var(--settle, 0))), 0px) rotate(calc(var(--tilt, 0deg) * (1 - var(--settle, 0))))"
+            : "translate3d(calc(var(--kick-x, 0px) * (1 - var(--settle, 0))), calc(var(--disp, 0) * (1 - var(--settle, 0)) * 1em), 0px) rotate(calc(var(--tilt, 0deg) * (1 - var(--settle, 0))))";
 
           return (
             <span
@@ -66,6 +66,8 @@ const FhtmPhrase = forwardRef<HTMLDivElement, FhtmPhraseProps>(
               style={
                 {
                   "--disp": initialDisp,
+                  "--kick-x": "0px",
+                  "--tilt": "0deg",
                   "--stack-x": "0px",
                   "--stack-y": "0px",
                   "--glow": 0,

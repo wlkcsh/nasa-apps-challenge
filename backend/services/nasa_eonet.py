@@ -32,7 +32,7 @@ async def fetch_regional_hazards(lat: float, lon: float, max_radius_km: float = 
     Returns filtered hazards or clean empty list on timeout/error.
     """
     url = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=20"
-    headers = {"User-Agent": "FieldShiftUzbekistan/1.0 (NASA Space Apps)"}
+    headers = {"User-Agent": "Agriverto/1.0 (NASA Space Apps)"}
 
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:

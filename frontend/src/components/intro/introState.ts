@@ -17,6 +17,7 @@ export interface IntroState {
   marsHeart: number;
   camZ: number;
   camX: number;
+  camLookX: number;
   rocketPx: { x: number; y: number };
 }
 
@@ -37,6 +38,7 @@ export function createIntroState(): IntroState {
     marsHeart: 0,
     camZ: CAMERA.z[0],
     camX: 0,
+    camLookX: 0,
     rocketPx: { x: -9999, y: -9999 },
   };
 }
@@ -60,6 +62,7 @@ export function resetIntroState(target: IntroState = introState): IntroState {
   target.marsHeart = fresh.marsHeart;
   target.camZ = fresh.camZ;
   target.camX = fresh.camX;
+  target.camLookX = fresh.camLookX;
   target.rocketPx = { ...fresh.rocketPx };
   return target;
 }

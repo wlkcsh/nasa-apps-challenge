@@ -21,17 +21,21 @@ import {
 import {
   AnalyzeFieldResponse,
   CropId,
+  CropTrait,
   FarmerPriority,
   PresetLocation,
+  PriorityWeights,
   SalinityLevel,
+  WhatIfScenario,
 } from "@/types/api";
 import PresetSelector from "@/components/PresetSelector";
 import ClimateCharts from "@/components/ClimateCharts";
 import RotationTimeline from "@/components/RotationTimeline";
+import RotationMatrix from "@/components/RotationMatrix";
 import AgronomicControls from "@/components/AgronomicControls";
 import MissionSeal from "@/components/MissionSeal";
 import IntroGate from "@/components/intro/IntroGate";
-import AralSitesWheel from "@/components/AralSitesWheel";
+import SuccessionArchitecture from "@/components/SuccessionArchitecture";
 
 const FarmMap = dynamic(() => import("@/components/FarmMap"), {
   ssr: false,
@@ -51,27 +55,144 @@ const API_BASE = "http://localhost:8000";
 
 export default function DashboardPage() {
   const [presets, setPresets] = useState<PresetLocation[]>([]);
-  const [activePresetId, setActivePresetId] = useState<string | null>("nukus");
-  const [lat, setLat] = useState<number>(42.4602);
-  const [lon, setLon] = useState<number>(59.6166);
-  const [currentCrop, setCurrentCrop] = useState<CropId>("cotton");
-  const [salinity, setSalinity] = useState<SalinityLevel>("severe");
-  const [priority, setPriority] = useState<FarmerPriority>("conserve_water");
-  const [climateStress, setClimateStress] = useState<boolean>(false);
+  const [cropsList, setCropsList] = useState<CropTrait[]>([]);
+  const [activePresetId, setActivePresetId] = useState<string | null>("tashkent");
+  const [lat, setLat] = useState<number>(41.3110);
+  const [lon, setLon] = useState<number>(69.2405);
+  const [currentRotation, setCurrentRotation] = useState<string[]>(["winter_wheat", "soybean"]);
+  const [salinity, setSalinity] = useState<SalinityLevel>("low");
+  const [priorities, setPriorities] = useState<PriorityWeights>({
+    water_saving: 8,
+    soil_om: 5,
+    nitrogen: 5,
+    erosion: 5,
+    forage: 4,
+    income: 5,
+  });
+  const [scenario, setScenario] = useState<WhatIfScenario>({
+    rain_pct: 0,
+    temp_c: 0.0,
+    supply: 1.0,
+  });
   const [analysis, setAnalysis] = useState<AnalyzeFieldResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [shouldFlyTo, setShouldFlyTo] = useState<boolean>(false);
+  const [activeSection, setActiveSection] = useState<string>("overview");
+  const lockedSectionRef = useRef<string | null>(null);
+  const lockTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const navContainerRef = useRef<HTMLElement>(null);
+  const [indicatorStyle, setIndicatorStyle] = useState<{
+    left: number;
+    width: number;
+    opacity: number;
+  }>({ left: 0, width: 0, opacity: 0 });
 
   const engineSectionRef = useRef<HTMLDivElement>(null);
+
+  const CHAPTERS = [
+    { id: "overview", num: "01", label: "Challenge" },
+    { id: "engine", num: "02", label: "Satellite Cockpit" },
+    { id: "rotation", num: "03", label: "3-Year Plan" },
+    { id: "climatology", num: "04", label: "Climatology" },
+  ];
+
+  const scrollToSection = useCallback((id: string) => {
+    // 1. Immediately switch the active section and indicator pill
+    setActiveSection(id);
+    lockedSectionRef.current = id;
+
+    // 2. Lock the Scroll Spy so intermediate sections never hijack the pill while in transit
+    if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
+    lockTimerRef.current = setTimeout(() => {
+      lockedSectionRef.current = null;
+    }, 950);
+
+    // 3. Smoothly glide to the target section with native GPU compositor acceleration
+    const el = document.getElementById(id);
+    if (!el) return;
+    const headerOffset = 84;
+    const elementTop = el.getBoundingClientRect().top + window.pageYOffset;
+    const targetY = Math.max(0, elementTop - headerOffset);
+
+    window.scrollTo({
+      top: targetY,
+      behavior: "smooth",
+    });
+  }, []);
+
+  const updateIndicator = useCallback(() => {
+    if (!navContainerRef.current) return;
+    const activeBtn = navContainerRef.current.querySelector<HTMLElement>(
+      `[data-nav-id="${activeSection}"]`
+    );
+    if (activeBtn) {
+      setIndicatorStyle({
+        left: activeBtn.offsetLeft,
+        width: activeBtn.offsetWidth,
+        opacity: 1,
+      });
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    updateIndicator();
+    window.addEventListener("resize", updateIndicator);
+    return () => window.removeEventListener("resize", updateIndicator);
+  }, [updateIndicator]);
+
+  // Scroll Spy to track active section for the top navigation bar
+  useEffect(() => {
+    const sectionIds = ["overview", "engine", "rotation", "climatology"];
+
+    const handleScroll = () => {
+      // While locked onto a clicked chapter, intermediate sections are prevented from hijacking the pill
+      if (lockedSectionRef.current) {
+        const targetEl = document.getElementById(lockedSectionRef.current);
+        if (targetEl) {
+          const targetY = Math.max(0, targetEl.getBoundingClientRect().top + window.pageYOffset - 84);
+          if (Math.abs(window.pageYOffset - targetY) < 25) {
+            lockedSectionRef.current = null;
+          }
+        }
+        return;
+      }
+
+      const scrollPos = window.scrollY + 280;
+      for (let i = sectionIds.length - 1; i >= 0; i--) {
+        const id = sectionIds[i];
+        const el = document.getElementById(id);
+        if (el && el.offsetTop <= scrollPos) {
+          setActiveSection(id);
+          break;
+        }
+      }
+    };
+
+    const handleUserInterrupt = () => {
+      // If user manually touches or scrolls, release lock immediately
+      lockedSectionRef.current = null;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("wheel", handleUserInterrupt, { passive: true });
+    window.addEventListener("touchmove", handleUserInterrupt, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("wheel", handleUserInterrupt);
+      window.removeEventListener("touchmove", handleUserInterrupt);
+    };
+  }, []);
 
   const runAnalysis = useCallback(
     async (
       qLat: number,
       qLon: number,
-      qCrop: CropId,
+      qRotation: string[],
       qSalinity: SalinityLevel,
-      qPriority: FarmerPriority,
-      qStress: boolean = false
+      qPriorities: PriorityWeights,
+      qScenario: WhatIfScenario
     ) => {
       setLoading(true);
       try {
@@ -81,10 +202,10 @@ export default function DashboardPage() {
           body: JSON.stringify({
             lat: qLat,
             lon: qLon,
-            current_crop: qCrop,
+            current_rotation: qRotation,
             soil_salinity_level: qSalinity,
-            farmer_priority: qPriority,
-            climate_stress_scenario: qStress,
+            priorities: qPriorities,
+            scenario: qScenario,
           }),
         });
         const data: AnalyzeFieldResponse = await res.json();
@@ -99,11 +220,32 @@ export default function DashboardPage() {
   );
 
   useEffect(() => {
+    document.documentElement.setAttribute("data-intro-active", "false");
     fetch(`${API_BASE}/api/presets`)
       .then((r) => r.json())
       .then((list: PresetLocation[]) => setPresets(list))
       .catch(console.error);
-    runAnalysis(42.4602, 59.6166, "cotton", "severe", "conserve_water", false);
+
+    fetch(`${API_BASE}/api/crops`)
+      .then((r) => r.json())
+      .then((list: CropTrait[]) => setCropsList(list))
+      .catch(console.error);
+
+    runAnalysis(
+      41.3110,
+      69.2405,
+      ["winter_wheat", "soybean"],
+      "low",
+      {
+        water_saving: 8,
+        soil_om: 5,
+        nitrogen: 5,
+        erosion: 5,
+        forage: 4,
+        income: 5,
+      },
+      { rain_pct: 0, temp_c: 0, supply: 1.0 }
+    );
   }, [runAnalysis]);
 
   const handleSelectPreset = (p: PresetLocation) => {
@@ -111,9 +253,10 @@ export default function DashboardPage() {
     setActivePresetId(p.id);
     setLat(p.lat);
     setLon(p.lon);
-    setCurrentCrop(p.default_crop);
+    const newRot = p.default_rotation && p.default_rotation.length > 0 ? p.default_rotation : [p.default_crop || "cotton"];
+    setCurrentRotation(newRot);
     setSalinity(p.default_salinity);
-    runAnalysis(p.lat, p.lon, p.default_crop, p.default_salinity, priority, climateStress);
+    runAnalysis(p.lat, p.lon, newRot, p.default_salinity, priorities, scenario);
   };
 
   const handleMapClick = (newLat: number, newLon: number) => {
@@ -121,25 +264,28 @@ export default function DashboardPage() {
     setActivePresetId(null);
     setLat(newLat);
     setLon(newLon);
-    runAnalysis(newLat, newLon, currentCrop, salinity, priority, climateStress);
+    runAnalysis(newLat, newLon, currentRotation, salinity, priorities, scenario);
   };
 
-  const handleClimateStressToggle = (checked: boolean) => {
-    setClimateStress(checked);
-    runAnalysis(lat, lon, currentCrop, salinity, priority, checked);
-  };
+  const scrollToEngine = useCallback(() => {
+    scrollToSection("engine");
+  }, [scrollToSection]);
 
-  const scrollToEngine = () => {
-    engineSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const handleRunScientificAnalysis = useCallback(async () => {
+    await runAnalysis(lat, lon, currentRotation, salinity, priorities, scenario);
+    // Automatically smooth-scroll down to Chapter 03: 3-Year Plan & Decision Matrix
+    setTimeout(() => {
+      scrollToSection("rotation");
+    }, 120);
+  }, [lat, lon, currentRotation, salinity, priorities, scenario, runAnalysis, scrollToSection]);
 
   const activePreset = presets.find((p) => p.id === activePresetId);
   const hazards = analysis?.regional_hazards || [];
 
   return (
-    <div className="min-h-screen bg-paper-100 text-espresso-900 selection:bg-harvest-500 selection:text-white font-sans antialiased relative">
-      {/* 0. FROM HEART TO MARS - SCROLL-DRIVEN 3D INTRO & HERO */}
-      <IntroGate />
+    <div className="min-h-screen bg-paper-100 text-espresso-900 selection:bg-harvest-500 selection:text-white font-sans antialiased relative w-full max-w-full overflow-x-hidden">
+      {/* 0. FROM HEART TO MARS - SCROLL-DRIVEN 3D INTRO & HERO (Temporarily disabled) */}
+      {/* <IntroGate /> */}
 
       {/* 1. FLOATING NAVIGATION BAR (Delta Cafés Colontitle Style) */}
       <header className="fixed top-0 left-0 right-0 z-50 p-3 sm:p-4 pointer-events-none transition-opacity duration-500">
@@ -151,7 +297,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-xs font-black tracking-tight text-espresso-950 uppercase font-sans">
-                Field Shift
+                Agriverto
               </span>
               <span className="text-xs font-serif italic text-harvest-600 font-normal">
                 Uzbekistan
@@ -162,33 +308,62 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          {/* Center: Navigation Chapters */}
-          <nav className="pointer-events-auto hidden lg:flex items-center gap-1 bg-white/95 border border-paper-300 px-3 py-1.5 rounded-full shadow-md backdrop-blur-md text-xs font-medium">
-            <a
-              href="#overview"
-              className="px-3 py-1 rounded-full text-espresso-700 hover:text-espresso-950 hover:bg-paper-100 transition-colors"
-            >
-              01. Challenge
-            </a>
-            <a
-              href="#engine"
-              className="px-3 py-1 rounded-full text-espresso-700 hover:text-espresso-950 hover:bg-paper-100 transition-colors"
-            >
-              02. Satellite Cockpit
-            </a>
-            <a
-              href="#rotation"
-              className="px-3 py-1 rounded-full text-espresso-700 hover:text-espresso-950 hover:bg-paper-100 transition-colors"
-            >
-              03. 3-Year Plan
-            </a>
-            <a
-              href="#climatology"
-              className="px-3 py-1 rounded-full text-espresso-700 hover:text-espresso-950 hover:bg-paper-100 transition-colors"
-            >
-              04. Climatology
-            </a>
+          {/* Center: Navigation Chapters with Animated Sliding Pill */}
+          <nav
+            ref={navContainerRef}
+            className="pointer-events-auto hidden lg:flex items-center gap-1 bg-white/95 border border-paper-300 p-1.5 rounded-full shadow-md backdrop-blur-md text-xs font-medium relative"
+          >
+            {/* Sliding Active Pill Background with Spring Kinetics */}
+            <div
+              className="absolute top-1.5 bottom-1.5 rounded-full bg-espresso-950 shadow-sm pointer-events-none transition-all duration-300"
+              style={{
+                transform: `translateX(${indicatorStyle.left}px)`,
+                width: `${indicatorStyle.width}px`,
+                opacity: indicatorStyle.opacity,
+                transitionTimingFunction: "var(--spring-snappy)",
+              }}
+            />
+
+            {CHAPTERS.map((ch) => {
+              const isActive = activeSection === ch.id;
+              return (
+                <button
+                  key={ch.id}
+                  data-nav-id={ch.id}
+                  type="button"
+                  onClick={() => scrollToSection(ch.id)}
+                  className={`relative z-10 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full transition-colors duration-200 cursor-pointer ${
+                    isActive
+                      ? "text-paper-50 font-bold"
+                      : "text-espresso-700 hover:text-espresso-950 hover:bg-paper-100/50"
+                  }`}
+                >
+                  {isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-harvest-400 shrink-0 animate-pulse" />
+                  )}
+                  <span>
+                    {ch.num}. {ch.label}
+                  </span>
+                </button>
+              );
+            })}
           </nav>
+
+          {/* Mobile Active Section Button with Smooth Animated Scroll */}
+          <button
+            type="button"
+            onClick={() => {
+              const currIdx = CHAPTERS.findIndex((c) => c.id === activeSection);
+              const nextIdx = (currIdx + 1) % CHAPTERS.length;
+              scrollToSection(CHAPTERS[nextIdx].id);
+            }}
+            className="lg:hidden pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 border border-paper-300 shadow-md backdrop-blur-md text-xs font-mono font-bold text-espresso-950 active:scale-95 transition-transform cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-harvest-500 animate-pulse" />
+            <span>
+              {CHAPTERS.find((c) => c.id === activeSection)?.num}. {CHAPTERS.find((c) => c.id === activeSection)?.label}
+            </span>
+          </button>
 
           {/* Right: Telemetry & Live Coordinates Pill */}
           <div className="pointer-events-auto flex items-center gap-2">
@@ -307,44 +482,38 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* 3. CHAPTER 01: THE ARAL BASIN DOSSIER */}
+      {/* 3. CHAPTER 01: THE ARAL BASIN DOSSIER & SUCCESSION BLUEPRINT */}
       <section className="py-20 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-          <div className="lg:col-span-5 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-harvest-100 border border-harvest-500/30 text-[10px] font-mono text-harvest-700 uppercase tracking-widest font-semibold">
-              <span>Chapter 01</span>
-              <span>•</span>
-              <span>Terrestrial Mars Analog</span>
-            </div>
+        <div className="max-w-4xl mb-12 space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-harvest-100 border border-harvest-500/30 text-[10px] font-mono text-harvest-700 uppercase tracking-widest font-semibold">
+            <span>Chapter 01</span>
+            <span>•</span>
+            <span>Terrestrial Mars Analog & Soil Succession</span>
+          </div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-espresso-950 leading-[0.95]">
-              Where A Sea Vanished, <br />
-              <span className="font-serif italic font-normal text-harvest-600">
-                Pioneering Crops Rise.
-              </span>
-            </h2>
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-espresso-950 leading-[0.95]">
+            Where A Sea Vanished, <br />
+            <span className="font-serif italic font-normal text-harvest-600">
+              Pioneering Crops Rise.
+            </span>
+          </h2>
 
-            <p className="text-sm sm:text-base text-espresso-700 font-serif leading-relaxed">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 text-espresso-700 font-serif leading-relaxed">
+            <p className="text-sm sm:text-base">
               The desiccated Aral Sea basin has become the youngest desert on Earth, the Aralkum. 
               Salt storms blow toxic dust across thousands of kilometers. Traditional flood 
               irrigation on upland cotton accelerates secondary salinization.
             </p>
-
-            <p className="text-sm text-espresso-600 leading-relaxed">
-              Field Shift models an adaptive 3-year succession: deep-taprooted pioneer crops 
+            <p className="text-sm sm:text-base text-espresso-600">
+              Agriverto models an adaptive 3-year biological succession: deep-taprooted pioneer crops 
               bio-drain shallow saline aquifers in Year 1, leguminous cover crops fix atmospheric 
               nitrogen in Year 2, and high-value cash crops yield clean harvests in Year 3.
             </p>
           </div>
+        </div>
 
-          <div className="lg:col-span-7">
-            <AralSitesWheel
-              presets={presets}
-              activePresetId={activePresetId}
-              onSelectPreset={handleSelectPreset}
-              onLaunchCockpit={scrollToEngine}
-            />
-          </div>
+        <div className="w-full max-w-full min-w-0">
+          <SuccessionArchitecture onLaunchCockpit={scrollToEngine} />
         </div>
       </section>
 
@@ -353,10 +522,10 @@ export default function DashboardPage() {
       <section
         id="engine"
         ref={engineSectionRef}
-        className="py-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300"
+        className="py-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300 w-full max-w-full min-w-0"
       >
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-8 w-full max-w-full min-w-0">
+          <div className="shrink-0">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-harvest-100 border border-harvest-500/30 text-[10px] font-mono text-harvest-700 uppercase tracking-widest mb-2 font-semibold">
               <span>Chapter 02</span>
               <span>•</span>
@@ -367,7 +536,7 @@ export default function DashboardPage() {
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="w-full lg:max-w-2xl xl:max-w-3xl min-w-0 overflow-hidden bg-white/80 p-1.5 rounded-2xl sm:rounded-full border border-paper-300 shadow-sm backdrop-blur-sm">
             <PresetSelector
               presets={presets}
               activeId={activePresetId}
@@ -377,15 +546,16 @@ export default function DashboardPage() {
         </div>
 
         {/* 12-Column Asymmetric Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full max-w-full min-w-0">
           {/* Left Column: Full Satellite Map Window (lg:col-span-7) */}
-          <div className="lg:col-span-7 space-y-3">
+          <div className="lg:col-span-7 space-y-3 w-full max-w-full min-w-0 relative z-10">
             <div className="h-[480px] lg:h-[580px] w-full rounded-2xl overflow-hidden border border-paper-300 shadow-md relative">
               <FarmMap
                 lat={lat}
                 lon={lon}
                 presets={presets}
                 hazards={hazards}
+                gibsLayers={analysis?.gibs_layers}
                 onSelectCoord={handleMapClick}
                 shouldFlyTo={shouldFlyTo}
               />
@@ -403,18 +573,19 @@ export default function DashboardPage() {
           </div>
 
           {/* Right Column: Agronomic Input Console (lg:col-span-5) */}
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 w-full max-w-full min-w-0 relative z-20">
             <AgronomicControls
-              currentCrop={currentCrop}
+              cropsList={cropsList}
+              currentRotation={currentRotation}
               salinity={salinity}
-              priority={priority}
-              climateStress={climateStress}
+              priorities={priorities}
+              scenario={scenario}
               loading={loading}
-              onCropChange={setCurrentCrop}
+              onRotationChange={setCurrentRotation}
               onSalinityChange={setSalinity}
-              onPriorityChange={setPriority}
-              onClimateStressChange={handleClimateStressToggle}
-              onSubmit={() => runAnalysis(lat, lon, currentCrop, salinity, priority, climateStress)}
+              onPrioritiesChange={setPriorities}
+              onScenarioChange={setScenario}
+              onSubmit={handleRunScientificAnalysis}
             />
           </div>
         </div>
@@ -423,7 +594,7 @@ export default function DashboardPage() {
       {/* 5. CHAPTER 03: THE 4 CORE AGRO-STAT PILLARS & 3-YEAR ROTATION PLAN */}
       <section
         id="rotation"
-        className="border-b border-paper-300"
+        className="border-b border-paper-300 w-full max-w-full min-w-0"
       >
         <div className="pt-16 pb-8 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-harvest-100 border border-harvest-500/30 text-[10px] font-mono text-harvest-700 uppercase tracking-widest mb-2 font-semibold">
@@ -441,20 +612,28 @@ export default function DashboardPage() {
         </div>
 
         {analysis && (
-          <RotationTimeline
-            strategies={analysis.strategies}
-            steps={analysis.rotation_plan}
-            metrics={analysis.impact_metrics}
-            modisNdvi={activePreset?.modis_mean_ndvi || 0.22}
-            smapMoisture={activePreset?.smap_soil_moisture_cm3 || 0.14}
-          />
+          <div className="pb-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto">
+            {analysis.candidates && analysis.candidates.length > 0 && (
+              <RotationMatrix
+                candidates={analysis.candidates}
+                recommendationSummary={analysis.ai_recommendation_summary}
+                contractsDisclaimer={analysis.contracts_disclaimer}
+                lowYieldRiskNote={analysis.low_yield_risk_note}
+                strategies={analysis.strategies}
+                steps={analysis.rotation_plan}
+                metrics={analysis.impact_metrics}
+                modisNdvi={activePreset?.modis_mean_ndvi || 0.22}
+                smapMoisture={activePreset?.smap_soil_moisture_cm3 || 0.14}
+              />
+            )}
+          </div>
         )}
       </section>
 
       {/* 6. CHAPTER 04: AGRO-CLIMATOLOGY TRENDS & 2035 SIMULATOR */}
       <section
         id="climatology"
-        className="py-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300"
+        className="py-16 px-4 sm:px-8 lg:px-12 max-w-[1680px] mx-auto border-b border-paper-300 w-full max-w-full min-w-0"
       >
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-harvest-100 border border-harvest-500/30 text-[10px] font-mono text-harvest-700 uppercase tracking-widest mb-2 font-semibold">
@@ -466,14 +645,19 @@ export default function DashboardPage() {
             Thermal and Hydrological Cycles
           </h2>
           <p className="mt-2 text-sm sm:text-base text-espresso-700 font-serif max-w-2xl">
-            Monthly solar irradiance, 2-meter air temperature, precipitation totals, 
-            and root-zone soil wetness ratios across the selected field coordinates.
+            9-metric agro-climatological ledger with Theil-Sen statistical decadal trends, 
+            FAO-56 Penman-Monteith evaporative balance, and ISRIC SoilGrids 250m survey.
           </p>
         </div>
 
         {analysis && (
           <div className="space-y-4">
-            <ClimateCharts climate={analysis.climate} />
+            <ClimateCharts
+              climate={analysis.climate}
+              kpis={analysis.kpis}
+              soilProfile={analysis.soil_profile}
+              waterBalance={analysis.water_balance_monthly}
+            />
           </div>
         )}
       </section>
@@ -483,7 +667,7 @@ export default function DashboardPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-black text-espresso-950 uppercase font-sans">
-              Field Shift Uzbekistan
+              Agriverto Uzbekistan
             </span>
             <span className="text-xs font-serif italic text-harvest-600">
               NASA Space Apps 2026

@@ -126,7 +126,7 @@ export default function IntroGate({
         ref={stageRef}
         className="sticky top-0 h-[100svh] w-full overflow-hidden bg-hero-backdrop z-[60]"
       >
-        {/* 3D WebGL Canvas Layer */}
+        {/* 3D WebGL Canvas Layer (z-10: deep space background behind FhtmPhrase) */}
         {mode === "full" && (
           <div
             data-canvas-wrap
@@ -141,8 +141,13 @@ export default function IntroGate({
           </div>
         )}
 
-        {/* Hero Layer (fades in during 7.4s-8.0s morph) */}
-        <div className="relative z-20 h-full w-full">
+        {/* Centered Phrase Layer (z-20: clearly visible in front of canvas with zero blend-mode glitching) */}
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
+          <FhtmPhrase ref={phraseRef} layout={layout} />
+        </div>
+
+        {/* Hero Layer (z-30: fades in during 7.4s-8.0s morph) */}
+        <div className="pointer-events-none relative z-30 h-full w-full">
           <Hero
             ref={heroRef}
             tagline={tagline}
@@ -151,12 +156,7 @@ export default function IntroGate({
           />
         </div>
 
-        {/* Centered Phrase Layer (doubles as the TeamBadge text after 7.4s-8.0s morph) */}
-        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center px-4">
-          <FhtmPhrase ref={phraseRef} layout={layout} />
-        </div>
-
-        {/* Scroll Cue + Skip Button Overlay */}
+        {/* Scroll Cue + Skip Button Overlay (z-40) */}
         <IntroOverlay onSkip={skip} />
       </div>
     </div>

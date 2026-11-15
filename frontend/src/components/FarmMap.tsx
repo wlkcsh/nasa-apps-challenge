@@ -3,71 +3,67 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Satellite, Compass, Layers, Plus, Minus } from "lucide-react";
-import { HazardEvent, PresetLocation } from "@/types/api";
+import { Satellite, Compass, Layers, Plus, Minus, Info, ChevronUp, ChevronDown } from "lucide-react";
+import { GibsLayerMeta, HazardEvent, PresetLocation } from "@/types/api";
 
 interface FarmMapProps {
   lat: number;
   lon: number;
   presets: PresetLocation[];
   hazards?: HazardEvent[];
+  gibsLayers?: Record<string, GibsLayerMeta>;
   onSelectCoord: (lat: number, lon: number) => void;
   shouldFlyTo?: boolean;
 }
+
+type MapLayerKey = "sat" | "ndvi" | "precip" | "temp" | "soil";
 
 export default function FarmMap({
   lat,
   lon,
   presets,
   hazards = [],
+  gibsLayers = {},
   onSelectCoord,
   shouldFlyTo = false,
 }: FarmMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const baseLayerRef = useRef<L.TileLayer | null>(null);
+  const overlayLayerRef = useRef<L.TileLayer | null>(null);
   const labelsLayerRef = useRef<L.TileLayer | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const pulseRingRef = useRef<L.CircleMarker | null>(null);
   const activeCoreRef = useRef<L.CircleMarker | null>(null);
 
-  const [activeLayer, setActiveLayer] = useState<"esri" | "modis" | "radar">("esri");
+  const [activeLayer, setActiveLayer] = useState<MapLayerKey>("sat");
+  const [legendExpanded, setLegendExpanded] = useState<boolean>(true);
 
-  // Keep a ref to onSelectCoord to avoid map re-init when callback changes
   const onSelectCoordRef = useRef(onSelectCoord);
   useEffect(() => {
     onSelectCoordRef.current = onSelectCoord;
   }, [onSelectCoord]);
 
-  // 1. Initialize Map Instance with Free Panning (no brick-wall maxBounds viscosity)
+  // 1. Initialize Map Instance
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Fast-Refresh safety guard: clean orphaned leaflet id if present
     if ((containerRef.current as unknown as { _leaflet_id?: number | null })._leaflet_id) {
       (containerRef.current as unknown as { _leaflet_id?: number | null })._leaflet_id = null;
     }
 
-    // Bounding Box strictly pinning the viewport to Uzbekistan and the Aral Basin
-    const UZBEKISTAN_BOUNDS: L.LatLngBoundsLiteral = [
-      [35.0, 52.0], // South-West (southern border & Turkmenistan buffer)
-      [47.5, 76.0], // North-East (Aral Sea, Karakalpakstan & Fergana valley)
-    ];
-    const UZBEKISTAN_CENTER: L.LatLngExpression = [41.3, 64.5];
+    const UZBEKISTAN_CENTER: L.LatLngExpression = [41.8, 62.5];
 
     const map = L.map(containerRef.current, {
       center: UZBEKISTAN_CENTER,
       zoom: 6,
-      minZoom: 5,
+      minZoom: 3,
       maxZoom: 18,
-      maxBounds: UZBEKISTAN_BOUNDS,
-      maxBoundsViscosity: 0.85,
       zoomControl: false,
-      worldCopyJump: false,
+      worldCopyJump: true,
       scrollWheelZoom: false,
     });
 
-    // Initial Base Layer: Esri World Imagery (Satellite)
     const base = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       {
@@ -77,7 +73,6 @@ export default function FarmMap({
     ).addTo(map);
     baseLayerRef.current = base;
 
-    // Clean Reference Labels Overlay for Satellite (Esri - zero API key, zero watermarks)
     const labels = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
       {
@@ -88,11 +83,9 @@ export default function FarmMap({
     ).addTo(map);
     labelsLayerRef.current = labels;
 
-    // Marker Group
     const markersGroup = L.layerGroup().addTo(map);
     markersLayerRef.current = markersGroup;
 
-    // Map Click Listener: select coordinates cleanly without dragging interruptions
     map.on("click", (e: L.LeafletMouseEvent) => {
       const clickedLat = Number(e.latlng.lat.toFixed(4));
       const clickedLon = Number(e.latlng.lng.toFixed(4));
@@ -101,7 +94,6 @@ export default function FarmMap({
 
     mapRef.current = map;
 
-    // Invalidate size once DOM settles and on resize
     const handleResize = () => {
       map.invalidateSize();
     };
@@ -119,58 +111,63 @@ export default function FarmMap({
     };
   }, []);
 
-  // 2. Handle Layer Switching (Esri Satellite vs NASA MODIS vs Dark Radar)
+  // 2. Handle Layer Switching with live NASA GIBS Overlays
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    if (baseLayerRef.current) {
-      map.removeLayer(baseLayerRef.current);
-    }
-    if (labelsLayerRef.current) {
-      map.removeLayer(labelsLayerRef.current);
-      labelsLayerRef.current = null;
+    if (overlayLayerRef.current) {
+      map.removeLayer(overlayLayerRef.current);
+      overlayLayerRef.current = null;
     }
 
-    if (activeLayer === "esri") {
-      baseLayerRef.current = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { attribution: "Esri Satellite", maxZoom: 18 }
-      ).addTo(map);
+    if (activeLayer === "sat") {
+      // Pure satellite base
+      return;
+    }
 
-      labelsLayerRef.current = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-        { attribution: "Esri Boundaries", maxZoom: 18, opacity: 0.85 }
-      ).addTo(map);
-    } else if (activeLayer === "modis") {
-      baseLayerRef.current = L.tileLayer(
-        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2024-07-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
-        {
-          attribution: "NASA EOSDIS GIBS",
-          maxNativeZoom: 9,
-          maxZoom: 18,
-        }
-      ).addTo(map);
+    const gibsMeta = gibsLayers[activeLayer];
+    let tileUrl = "";
+    let maxNative = 9;
 
-      labelsLayerRef.current = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-        { attribution: "Esri Boundaries", maxZoom: 18, opacity: 0.9 }
-      ).addTo(map);
+    if (gibsMeta && gibsMeta.tile_url) {
+      tileUrl = gibsMeta.tile_url;
+      maxNative = gibsMeta.max_zoom || 9;
     } else {
-      // Dark Radar (Esri Dark Gray Canvas - free, unwatermarked)
-      baseLayerRef.current = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-        { attribution: "Esri Dark Gray", maxZoom: 16 }
-      ).addTo(map);
-
-      labelsLayerRef.current = L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
-        { attribution: "Esri Reference", maxZoom: 16, opacity: 0.9 }
-      ).addTo(map);
+      // Fallback live WMTS templates if metadata is still loading
+      if (activeLayer === "ndvi") {
+        tileUrl = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_8Day/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png";
+        maxNative = 9;
+      } else if (activeLayer === "precip") {
+        tileUrl = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/IMERG_Precipitation_Rate/default/default/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png";
+        maxNative = 6;
+      } else if (activeLayer === "temp") {
+        tileUrl = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_L3_Land_Surface_Temp_8Day_Day/default/default/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png";
+        maxNative = 7;
+      } else if (activeLayer === "soil") {
+        tileUrl = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/SMAP_L4_Analyzed_Surface_Soil_Moisture/default/default/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png";
+        maxNative = 6;
+      }
     }
-  }, [activeLayer]);
 
-  // 3. Handle FlyTo ONLY when requested (e.g. preset selection), not on casual map click
+    if (tileUrl) {
+      const gibsTileLayer = L.tileLayer(tileUrl, {
+        attribution: "NASA GIBS / EOSDIS",
+        maxNativeZoom: maxNative,
+        maxZoom: 18,
+        opacity: 0.82,
+      }).addTo(map);
+
+      overlayLayerRef.current = gibsTileLayer;
+
+      // Bring boundaries & labels back to the top
+      if (labelsLayerRef.current) {
+        labelsLayerRef.current.bringToFront();
+      }
+    }
+  }, [activeLayer, gibsLayers]);
+
+  // 3. Handle FlyTo
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !shouldFlyTo) return;
@@ -181,29 +178,31 @@ export default function FarmMap({
     });
   }, [lat, lon, shouldFlyTo]);
 
-  // 4. Render Markers (Target Marker + Preset Hotspots)
+  // 4. Render Markers
   useEffect(() => {
     const markersGroup = markersLayerRef.current;
     if (!markersGroup) return;
 
     markersGroup.clearLayers();
 
-    // Preset Location Marker Dots
     presets.forEach((p) => {
       const isTarget = Math.abs(p.lat - lat) < 0.05 && Math.abs(p.lon - lon) < 0.05;
       if (isTarget) return;
 
       const marker = L.circleMarker([p.lat, p.lon], {
-        radius: 6,
+        radius: 7,
         color: "#c9a24a",
-        fillColor: "#0c1017",
-        fillOpacity: 0.85,
-        weight: 1.5,
+        fillColor: "#140e0b",
+        fillOpacity: 0.9,
+        weight: 2,
       });
 
       marker.bindTooltip(
-        `<span style="font-family: var(--font-sans); font-size: 11px; font-weight: 600; color: #efe9f2;">${p.name.split(" ")[0]}</span>`,
-        { permanent: false, direction: "top", offset: [0, -6] }
+        `<div style="font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600; color: #140e0b; line-height: 1.3;">
+          <div style="color: #c9a24a; font-weight: 700;">${p.name}</div>
+          <div style="font-size: 9px; color: #666; text-transform: uppercase; font-family: monospace;">${p.region} · ${p.default_salinity} ECe</div>
+        </div>`,
+        { permanent: false, direction: "top", offset: [0, -8] }
       );
 
       marker.on("click", (e) => {
@@ -214,7 +213,6 @@ export default function FarmMap({
       markersGroup.addLayer(marker);
     });
 
-    // Active Target Crosshair with Obsidian and Warm Gold Glow
     const pulseRing = L.circleMarker([lat, lon], {
       radius: 20,
       color: "#c9a24a",
@@ -238,7 +236,7 @@ export default function FarmMap({
       <div style="font-family: var(--font-sans); font-size: 11px; line-height: 1.4;">
         <div style="font-weight: 700; color: #c9a24a; letter-spacing: 0.05em; text-transform: uppercase;">Selected Field Coordinates</div>
         <div style="font-family: monospace; color: #faf8f5; font-size: 12px; margin-top: 2px;">${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E</div>
-        <div style="color: #a19ea8; font-size: 10px; margin-top: 4px;">NASA POWER & Agro-Climatology Live Sync</div>
+        <div style="color: #a19ea8; font-size: 10px; margin-top: 4px;">NASA POWER & GIBS Climatology Live Sync</div>
       </div>
     `);
 
@@ -246,7 +244,6 @@ export default function FarmMap({
     markersGroup.addLayer(activeCore);
   }, [lat, lon, presets]);
 
-  // Zoom handlers
   const handleZoomIn = () => {
     mapRef.current?.zoomIn();
   };
@@ -255,9 +252,11 @@ export default function FarmMap({
     mapRef.current?.zoomOut();
   };
 
+  const currentGibs = activeLayer !== "sat" ? gibsLayers[activeLayer] : null;
+
   return (
     <div className="relative h-full w-full overflow-hidden bg-paper-200 cursor-crosshair">
-      {/* Floating Dedicated Zoom Controls (always visible, unobstructed) */}
+      {/* Zoom Controls */}
       <div className="absolute top-24 left-4 z-[400] flex flex-col gap-1 bg-white/95 border border-paper-300 rounded-xl p-1 shadow-md">
         <button
           type="button"
@@ -279,56 +278,126 @@ export default function FarmMap({
       </div>
 
       {/* Floating Bottom Center Layer Switcher HUD */}
-      <div className="absolute bottom-5 left-4 sm:left-6 z-[400] flex items-center gap-1.5 bg-white/95 border border-paper-300 rounded-full p-1.5 shadow-lg">
+      <div className="absolute bottom-5 left-4 sm:left-6 z-[400] flex flex-wrap items-center gap-1.5 bg-white/95 border border-paper-300 rounded-full p-1.5 shadow-lg max-w-[calc(100vw-40px)]">
         <div className="flex items-center gap-1 pl-2 pr-1 text-harvest-600">
           <Layers className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-harvest-600 font-semibold hidden sm:inline">
-            Layer
+          <span className="text-[10px] font-mono uppercase tracking-widest text-harvest-600 font-semibold hidden md:inline">
+            NASA Layers
           </span>
         </div>
 
         <button
           type="button"
-          onClick={() => setActiveLayer("esri")}
+          onClick={() => setActiveLayer("sat")}
           className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-tight transition-all cursor-pointer ${
-            activeLayer === "esri"
+            activeLayer === "sat"
               ? "bg-espresso-950 text-paper-50 font-semibold shadow-sm"
               : "text-espresso-700 hover:text-espresso-950 hover:bg-paper-100"
           }`}
         >
           <Satellite className="w-3 h-3" />
-          Esri Satellite
+          Satellite Base
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveLayer("modis")}
+          onClick={() => setActiveLayer("ndvi")}
           className={`px-3 py-1 rounded-full text-[11px] font-medium tracking-tight transition-all cursor-pointer ${
-            activeLayer === "modis"
+            activeLayer === "ndvi"
               ? "bg-espresso-950 text-paper-50 font-semibold shadow-sm"
               : "text-espresso-700 hover:text-espresso-950 hover:bg-paper-100"
           }`}
         >
-          NASA MODIS
+          MODIS NDVI (250m)
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveLayer("radar")}
+          onClick={() => setActiveLayer("precip")}
           className={`px-3 py-1 rounded-full text-[11px] font-medium tracking-tight transition-all cursor-pointer ${
-            activeLayer === "radar"
+            activeLayer === "precip"
               ? "bg-espresso-950 text-paper-50 font-semibold shadow-sm"
               : "text-espresso-700 hover:text-espresso-950 hover:bg-paper-100"
           }`}
         >
-          Dark Radar
+          GPM Rainfall
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveLayer("temp")}
+          className={`px-3 py-1 rounded-full text-[11px] font-medium tracking-tight transition-all cursor-pointer ${
+            activeLayer === "temp"
+              ? "bg-espresso-950 text-paper-50 font-semibold shadow-sm"
+              : "text-espresso-700 hover:text-espresso-950 hover:bg-paper-100"
+          }`}
+        >
+          Land Temp (LST)
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveLayer("soil")}
+          className={`px-3 py-1 rounded-full text-[11px] font-medium tracking-tight transition-all cursor-pointer ${
+            activeLayer === "soil"
+              ? "bg-espresso-950 text-paper-50 font-semibold shadow-sm"
+              : "text-espresso-700 hover:text-espresso-950 hover:bg-paper-100"
+          }`}
+        >
+          SMAP Moisture
         </button>
       </div>
+
+      {/* Floating Expandable GIBS Legend (Bottom Right) */}
+      {activeLayer !== "sat" && (
+        <div className="absolute top-24 right-4 z-[400] max-w-[280px] bg-white/95 border border-paper-300 rounded-xl p-3 shadow-lg backdrop-blur-md text-xs">
+          <div
+            className="flex items-center justify-between gap-2 cursor-pointer select-none font-semibold text-espresso-950 text-[11px]"
+            onClick={() => setLegendExpanded(!legendExpanded)}
+          >
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-harvest-600 animate-pulse" />
+              <span className="truncate">{currentGibs?.title || activeLayer.toUpperCase()}</span>
+            </div>
+            {legendExpanded ? <ChevronUp className="w-3.5 h-3.5 text-espresso-600" /> : <ChevronDown className="w-3.5 h-3.5 text-espresso-600" />}
+          </div>
+
+          {legendExpanded && (
+            <div className="mt-2 space-y-1.5 pt-2 border-t border-paper-200">
+              <div
+                className="h-2.5 w-full rounded-sm border border-paper-300 shadow-inner"
+                style={{
+                  background:
+                    currentGibs?.gradient_css && currentGibs.gradient_css !== "none"
+                      ? currentGibs.gradient_css
+                      : activeLayer === "ndvi"
+                      ? "linear-gradient(to right, #8c510a, #d8b365, #f5f5f5, #c7eae5, #01665e)"
+                      : activeLayer === "precip"
+                      ? "linear-gradient(to right, #eff3ff, #bdd7e7, #6baed6, #2171b5)"
+                      : activeLayer === "temp"
+                      ? "linear-gradient(to right, #313695, #74add1, #e0f3f8, #fdae61, #d73027)"
+                      : "linear-gradient(to right, #f7fbff, #9ecae1, #2171b5, #08306b)",
+                }}
+              />
+
+              <div className="flex justify-between text-[10px] font-mono text-espresso-600 font-medium">
+                <span>{currentGibs?.vmin ?? (activeLayer === "ndvi" ? -0.2 : 0)} {currentGibs?.units}</span>
+                <span>{currentGibs?.vmax ?? (activeLayer === "ndvi" ? 1.0 : 100)} {currentGibs?.units}</span>
+              </div>
+
+              <div className="text-[9px] text-espresso-500 font-mono flex items-center justify-between pt-1 border-t border-paper-100">
+                <span>EOSDIS GIBS WMTS</span>
+                <span>{currentGibs?.date || "Live Observation"}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Floating Bottom Hint Badge */}
       <div className="absolute bottom-5 right-4 sm:right-6 z-[400] hidden md:flex items-center gap-2 bg-white/95 border border-paper-300 px-3.5 py-1.5 rounded-full text-[11px] text-espresso-700 shadow-md">
         <Compass className="w-3.5 h-3.5 text-harvest-600" />
-        <span>Click anywhere to select coordinates freely</span>
+        <span>Click anywhere to select coordinates</span>
       </div>
 
       {/* Leaflet Map DOM Node */}

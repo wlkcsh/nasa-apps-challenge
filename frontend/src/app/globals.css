@@ -4,8 +4,11 @@
 @tailwind utilities;
 
 :root {
-  --font-serif: "PP Pangaia", "Cormorant Garamond", "Playfair Display", Georgia, serif;
-  --font-sans: "Switzer", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --font-serif: "Charter", "Iowan Old Style", "Apple Garamond", "Baskerville", "Playfair Display", "Times New Roman", Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-display: "Charter", "Iowan Old Style", "Apple Garamond", "Playfair Display", Georgia, serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --accent-gold: #c89b3c;
   --accent-gold-light: rgba(200, 155, 60, 0.15);
   --paper-bg: #f7f4ee;
@@ -26,18 +29,41 @@
     0, 0.004, 0.016, 0.035, 0.063, 0.098, 0.141 6.8%, 0.441 16.2%, 
     0.72 25.6%, 0.904 36.1%, 0.968 44.5%, 0.993 54.4%, 1 65%
   );
+  --spring-elastic: linear(
+    0, 0.009, 0.037 2.3%, 0.148 5.7%, 0.738 15.6%, 0.978 20.7%, 
+    1.062 25.3%, 1.077 28.2%, 1.067 31.3%, 1.012 40.5%, 0.994 48.9%, 1 65%
+  );
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-spring-in {
+  animation: fadeInScale 220ms var(--spring-snappy) forwards;
 }
 
 html {
+  scroll-padding-top: 5.5rem;
+}
+
+html,
+body {
   background-color: #f7f4ee;
   color: #221713;
   font-family: var(--font-sans);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-}
-
-body {
-  background-color: inherit;
-  color: inherit;
+  max-width: 100vw;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
   min-height: 100vh;
 }
 
@@ -60,6 +86,17 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #c89b3c;
+}
+
+/* Hide scrollbar utility for sleek horizontal ribbons & chips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Leaflet Editorial Paper Overrides */
@@ -138,7 +175,7 @@ body {
   }
 }
 
-/* Field Shift UZ — Hero & Intro Backdrop Utilities */
+/* Agriverto — Hero & Intro Backdrop Utilities */
 .bg-hero-backdrop {
   background-color: #070709;
   background-image:

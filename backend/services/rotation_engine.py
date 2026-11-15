@@ -361,7 +361,7 @@ def _build_rubric_fields(
         )
 
     gaps = [
-        "Regional Data Availability: High-resolution US datasets in the NASA catalog (USDA SSURGO, Cropland Data Layer, OpenET) do not cover Central Asia; Field Shift bridges this gap using global NASA POWER, SMAP, MODIS, and FAO GAEZ v4 agro-ecological suitability rules paired with farmer-reported soil salinity (ECe).",
+        "Regional Data Availability: High-resolution US datasets in the NASA catalog (USDA SSURGO, Cropland Data Layer, OpenET) do not cover Central Asia; Agriverto bridges this gap using global NASA POWER, SMAP, MODIS, and FAO GAEZ v4 agro-ecological suitability rules paired with farmer-reported soil salinity (ECe).",
         "Spatial Resolution: ~50 km NASA POWER grid cells do not capture sub-kilometer irrigation canal leakage or micro-topography.",
         "Sensor Depth Limits: Surface satellite radiometry (0–5 cm GWETTOP) does not measure 1-meter root-zone ECe salinity or water table fluctuations.",
         "Water Administration: Canal Water User Association (WUA) rotational schedules and volumetric quotas must be verified locally.",

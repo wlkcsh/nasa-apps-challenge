@@ -16,6 +16,7 @@ import {
   P_NOMINAL,
   PORTRAIT_STACK_SPAN,
   P_RAMP,
+  remapScrollWithKnee,
   SCRUB,
   TAIL_STAGGER,
 } from "@/lib/config";
@@ -76,8 +77,6 @@ export function useIntroTimeline({
       phraseEl.querySelectorAll<HTMLElement>("[data-tail-wrap]")
     );
 
-    // Measure capital triggers across the central flight zone so that F, H, T, M
-    // separate sequentially as the rocket slices through the center of the viewport.
     const measureTriggers = () => {
       const stageHeight =
         stageEl?.clientHeight || window.innerHeight || 800;
@@ -106,8 +105,8 @@ export function useIntroTimeline({
           wordEl.style.setProperty("--stack-y", "0px");
         });
 
-        // Spread the 4 horizontal trigger gates across the central monogram zone (35% -> 57.5% of viewport width)
-        // so F, H, T, M separate cleanly one after another as the rocket crosses the center.
+        // Spread the 4 horizontal trigger gates across the central monogram corridor (35% -> 58% of viewport width)
+        // so F, H, T, M split and unfold sequentially as the rocket slices across the center axis.
         const zoneStart = stageWidth * 0.35;
         const zoneStep = stageWidth * 0.075;
         for (let idx = 0; idx < 4; idx++) {
@@ -151,6 +150,10 @@ export function useIntroTimeline({
         stageEl?.querySelector<HTMLElement>("[data-scroll-cue]") ?? null;
       const scrollHairlineEl =
         stageEl?.querySelector<HTMLElement>("[data-scroll-hairline]") ?? null;
+      const axialHudEl =
+        stageEl?.querySelector<HTMLElement>("[data-axial-hud]") ?? null;
+      const atmoHandoffEl =
+        stageEl?.querySelector<HTMLElement>("[data-atmo-handoff]") ?? null;
       const skipBtnWrapEl =
         stageEl?.querySelector<HTMLElement>("[data-skip-btn-wrap]") ?? null;
       const canvasContainerEl =
@@ -164,13 +167,13 @@ export function useIntroTimeline({
       const heroCtaEl =
         stageEl?.querySelector<HTMLElement>("[data-hero-cta]") ?? null;
 
-      // Initialize compact FHTM monogram: zero vertical displacement, tail wrappers collapsed
+      // Initialize compact FHTM monogram: explicit full opacity, zero vertical displacement, tail wrappers collapsed
       gsap.set(phraseEl, {
+        opacity: 1,
         "--settle": 0,
         x: 0,
         y: 0,
         scale: 1,
-        opacity: 1,
       });
 
       wordEls.forEach((wordEl, i) => {
@@ -182,7 +185,7 @@ export function useIntroTimeline({
       });
 
       capitalEls.forEach((capEl) => {
-        gsap.set(capEl, { opacity: 0.78 });
+        gsap.set(capEl, { opacity: DIM_OPACITY });
       });
 
       tailWrapEls.forEach((twEl) => {
@@ -195,7 +198,7 @@ export function useIntroTimeline({
       });
 
       if (heroSectionEl) {
-        gsap.set(heroSectionEl, { opacity: 0 });
+        gsap.set(heroSectionEl, { opacity: 0, pointerEvents: "none" });
       }
       const heroItems = [heroTitleEl, heroTaglineEl, heroCtaEl].filter(Boolean);
       if (heroItems.length > 0) {
@@ -203,7 +206,7 @@ export function useIntroTimeline({
       }
 
       // Build 4 paused reversible letter timelines:
-      // As the rocket passes, F goes UP (-0.72em), H goes DOWN (+0.72em), T goes UP (-0.72em), M goes DOWN (+0.72em)
+      // F goes UP (-0.72em), H goes DOWN (+0.72em), T goes UP (-0.72em), M goes DOWN (+0.72em)
       // while the tail wrapper expands horizontally to reveal "rom", "eart", "o", "ars".
       const tailMaxWidths = ["2.6em", "3.1em", "0.95em", "2.3em"];
 
@@ -235,7 +238,7 @@ export function useIntroTimeline({
         if (capEl) {
           ltl.fromTo(
             capEl,
-            { opacity: 0.78 },
+            { opacity: DIM_OPACITY },
             {
               opacity: 1,
               duration: DURATIONS.capitalMove * 0.5,
@@ -293,6 +296,15 @@ export function useIntroTimeline({
         0
       );
 
+      if (axialHudEl) {
+        bootTl.fromTo(
+          axialHudEl,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.9, ease: "power2.out" },
+          0.3
+        );
+      }
+
       if (scrollCueEl) {
         bootTl.fromTo(
           scrollCueEl,
@@ -307,42 +319,44 @@ export function useIntroTimeline({
         );
       }
 
-      // 2. MASTER TIMELINE (8.0s, scrubbed via ScrollTrigger)
-      const master = gsap.timeline({
-        scrollTrigger: {
-          trigger: wrapperEl,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: SCRUB,
-          invalidateOnRefresh: true,
-          onRefresh: () => {
-            measureTriggers();
-          },
-          onUpdate: (self) => {
-            introState.deltaP = Math.max(0, self.progress - introState.p);
-            introState.p = self.progress;
+      // 2. MASTER TIMELINE (8.0s, driven by non-linear Freight Knee curve via ScrollTrigger)
+      const master = gsap.timeline({ paused: true });
 
-            if (typeof document !== "undefined") {
-              document.documentElement.setAttribute(
-                "data-intro-active",
-                self.progress < 0.92 ? "true" : "false"
-              );
-            }
+      const st = ScrollTrigger.create({
+        trigger: wrapperEl,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: SCRUB,
+        invalidateOnRefresh: true,
+        onRefresh: () => {
+          measureTriggers();
+        },
+        onUpdate: (self) => {
+          const mappedP = remapScrollWithKnee(self.progress);
+          introState.deltaP = Math.max(0, mappedP - introState.p);
+          introState.p = mappedP;
+          master.progress(mappedP);
 
-            if (self.progress > 0.001) {
-              cancelTease();
-            }
+          if (typeof document !== "undefined") {
+            document.documentElement.setAttribute(
+              "data-intro-active",
+              self.progress < 0.92 ? "true" : "false"
+            );
+          }
 
-            if (skipBtnWrapEl) {
-              skipBtnWrapEl.style.opacity = self.progress > 0.95 ? "0" : "1";
-              skipBtnWrapEl.style.pointerEvents =
-                self.progress > 0.95 ? "none" : "auto";
-            }
-          },
+          if (self.progress > 0.001) {
+            cancelTease();
+          }
+
+          if (skipBtnWrapEl) {
+            skipBtnWrapEl.style.opacity = self.progress > 0.95 ? "0" : "1";
+            skipBtnWrapEl.style.pointerEvents =
+              self.progress > 0.95 ? "none" : "auto";
+          }
         },
       });
 
-      stRef.current = master.scrollTrigger ?? null;
+      stRef.current = st;
 
       master.addLabel("liftoff", LABELS.liftoff); // 0.0
       master.addLabel("cruise", LABELS.cruise);   // 0.8
@@ -380,7 +394,7 @@ export function useIntroTimeline({
 
       master.fromTo(
         introState,
-        { marsIn: 5.5 },
+        { marsIn: 2.5 },
         {
           marsIn: 0,
           camX: 0.3,
@@ -402,6 +416,29 @@ export function useIntroTimeline({
         },
         5.9
       );
+
+      // Freight Atmospheric Horizon Handoff rises during Mars arrival & settle
+      if (atmoHandoffEl) {
+        master.fromTo(
+          atmoHandoffEl,
+          { opacity: 0 },
+          { opacity: 1, duration: 1.4, ease: "power2.inOut" },
+          "mars"
+        );
+      }
+
+      // Fade out bilateral axial telemetry HUD as words settle onto the baseline
+      if (axialHudEl) {
+        master.to(
+          axialHudEl,
+          {
+            opacity: 0,
+            duration: LABELS.hold - LABELS.settle,
+            ease: "power2.out",
+          },
+          "settle"
+        );
+      }
 
       // 6.8 - 7.1s (settle): --settle 0 -> 1 brings separated words back onto one horizontal line
       master.fromTo(
@@ -482,6 +519,7 @@ export function useIntroTimeline({
           opacity: 0,
           duration: morphDuration,
           ease: EASINGS.EASE_SETTLE,
+          immediateRender: false,
         },
         "morph"
       );
@@ -513,6 +551,7 @@ export function useIntroTimeline({
           heroSectionEl,
           {
             opacity: 1,
+            pointerEvents: "auto",
             duration: morphDuration * 0.75,
             ease: "power2.out",
           },

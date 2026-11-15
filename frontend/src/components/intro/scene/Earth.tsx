@@ -26,12 +26,13 @@ uniform vec3 uRimColor;
 uniform float uRimIntensity;
 uniform float uRimPower;
 uniform float uTime;
-uniform vec3 uLand;
-uniform vec3 uSoil;
-uniform vec3 uOceanDeep;
+uniform vec3 uOceanAbyss;
 uniform vec3 uOceanMid;
-uniform vec3 uHeart;
+uniform vec3 uLandTemperate;
+uniform vec3 uLandArid;
+uniform vec3 uSnow;
 uniform vec3 uBone;
+uniform vec3 uCityLights;
 uniform vec3 uTashkentLocal;
 
 varying vec3 vNormalW;
@@ -67,15 +68,26 @@ float fbm(vec3 p) {
   );
   for (int i = 0; i < 5; i++) {
     v += a * noise(p);
-    p = rot * p * 2.06 + vec3(0.13, -0.27, 0.41);
+    p = rot * p * 2.02 + vec3(0.13, -0.27, 0.41);
     a *= 0.5;
   }
   return v;
 }
 
-float sampleHeight(vec3 nPos) {
-  float elev = fbm(nPos * 2.55 + vec3(0.45, -0.25, 0.72));
-  float detail = fbm(nPos * 8.4 + vec3(1.3, 0.8, -0.5));
+// Multi-octave domain-warped continental elevation model
+float sampleContinentalElevation(vec3 nPos) {
+  vec3 q = vec3(
+    fbm(nPos * 1.6 + vec3(0.0, 0.0, 0.0)),
+    fbm(nPos * 1.6 + vec3(5.2, 1.3, 2.8)),
+    fbm(nPos * 1.6 + vec3(1.8, 4.2, 3.1))
+  );
+  vec3 r = vec3(
+    fbm(nPos * 1.6 + 3.2 * q + vec3(1.7, 9.2, 0.5)),
+    fbm(nPos * 1.6 + 3.2 * q + vec3(8.3, 2.8, 1.2)),
+    fbm(nPos * 1.6 + 3.2 * q + vec3(2.4, 5.1, 7.3))
+  );
+  float elev = fbm(nPos * 1.8 + 2.0 * r);
+  float detail = fbm(nPos * 6.5);
   return elev * 0.78 + detail * 0.22;
 }
 
@@ -85,87 +97,87 @@ void main() {
   vec3 V = normalize(cameraPosition - vPosW);
   vec3 L = normalize(uSunDir);
 
-  float h = sampleHeight(nLocal);
-  float detail = fbm(nLocal * 8.4 + vec3(1.3, 0.8, -0.5));
+  float h = sampleContinentalElevation(nLocal);
 
-  // Finite-difference topographic bump normal for crisp mountain/basin relief
+  // Finite-difference topographic bump normal for mountain ranges
   float eps = 0.008;
-  float hx = sampleHeight(normalize(nLocal + vec3(eps, 0.0, 0.0))) - h;
-  float hy = sampleHeight(normalize(nLocal + vec3(0.0, eps, 0.0))) - h;
-  float hz = sampleHeight(normalize(nLocal + vec3(0.0, 0.0, eps))) - h;
+  float hx = sampleContinentalElevation(normalize(nLocal + vec3(eps, 0.0, 0.0))) - h;
+  float hy = sampleContinentalElevation(normalize(nLocal + vec3(0.0, eps, 0.0))) - h;
+  float hz = sampleContinentalElevation(normalize(nLocal + vec3(0.0, 0.0, eps))) - h;
   vec3 bumpGrad = vec3(hx, hy, hz) / eps;
 
-  float landMask = smoothstep(0.482, 0.515, h);
-  float shelfMask = smoothstep(0.38, 0.50, h);
+  float landMask = smoothstep(0.485, 0.515, h);
+  float shelfMask = smoothstep(0.41, 0.495, h);
 
-  // Perturb normal on landmasses so mountain ranges catch grazing directional sunlight
-  vec3 N = normalize(baseN - bumpGrad * (0.085 * landMask));
+  // Mountain relief perturbed normal
+  vec3 N = normalize(baseN - bumpGrad * (0.075 * landMask));
 
-  // Rich abyssal ocean -> teal mid-ocean -> orbit cyan shallow coastal shelf
-  vec3 oceanColor = mix(uOceanDeep, uOceanMid, smoothstep(0.20, 0.44, h));
-  oceanColor = mix(oceanColor, uRimColor * 0.58, shelfMask * 0.68);
+  // 1. Realistic Deep Navy Oceans (#040D1A -> #0A2A4A) with shallow coastal shelf
+  vec3 oceanColor = mix(uOceanAbyss, uOceanMid, smoothstep(0.20, 0.46, h));
+  oceanColor = mix(oceanColor, vec3(0.05, 0.22, 0.35), shelfMask * 0.65);
 
-  // Land biomes: Vigor emerald (#10B981) agricultural valleys -> Soil gold (#C9A24A) steppes -> snow peaks
-  float aridFactor = smoothstep(0.40, 0.66, detail + abs(nLocal.y) * 0.12);
-  vec3 landColor = mix(uLand * 0.68, uSoil * 0.88, aridFactor);
-  float alpine = smoothstep(0.63, 0.77, h);
-  landColor = mix(landColor, uBone * 0.82, alpine * 0.55);
+  // 2. Subtle Temperate (#1B3B2B) & Arid (#5C4D3C) Landmasses with alpine snow
+  float detailNoise = fbm(nLocal * 8.0);
+  float aridFactor = smoothstep(0.42, 0.68, detailNoise + abs(nLocal.y) * 0.18);
+  vec3 landColor = mix(uLandTemperate, uLandArid, aridFactor);
+  float alpine = smoothstep(0.66, 0.78, h);
+  landColor = mix(landColor, uSnow, alpine * 0.65);
 
   vec3 surfaceColor = mix(oceanColor, landColor, landMask);
 
-  // Faint cyan lat/lon telemetry graticule
-  float lat = asin(clamp(nLocal.y, -1.0, 1.0));
-  float lon = atan(nLocal.z, nLocal.x);
-  float gridLat = abs(fract(lat * 6.0 / 3.14159265) - 0.5);
-  float gridLon = abs(fract(lon * 12.0 / 3.14159265) - 0.5);
-  float graticule = 1.0 - smoothstep(0.0, 0.02, min(gridLat, gridLon));
-  surfaceColor += uRimColor * graticule * (0.06 + 0.06 * (1.0 - landMask));
+  // 3. Dedicated High-Detail Animated Cloud Layer with Soft Drop Shadows
+  vec3 cloudOffset = vec3(uTime * 0.012, -uTime * 0.004, uTime * 0.008);
+  vec3 cloudCoord = nLocal * 3.4 + cloudOffset;
+  float c1 = fbm(cloudCoord);
+  float c2 = fbm(cloudCoord * 2.2 + vec3(1.4, 2.1, 0.7));
+  float cloudDensity = smoothstep(0.49, 0.75, c1 * 0.68 + c2 * 0.32);
 
-  // Animated drifting cloud wisps with subtle shadow
-  vec3 cloudCoord = nLocal * 3.3 + vec3(uTime * 0.015, -uTime * 0.007, uTime * 0.011);
-  float cloudNoise = fbm(cloudCoord);
-  float clouds = smoothstep(0.56, 0.76, cloudNoise) * 0.26;
-  surfaceColor = mix(surfaceColor, uBone, clouds);
+  // Soft cloud drop shadow on surface (offset toward sun)
+  vec3 shadowCoord = (nLocal - L * 0.032) * 3.4 + cloudOffset;
+  float s1 = fbm(shadowCoord);
+  float s2 = fbm(shadowCoord * 2.2 + vec3(1.4, 2.1, 0.7));
+  float cloudShadow = smoothstep(0.49, 0.75, s1 * 0.68 + s2 * 0.32) * 0.45;
 
-  // Day/night terminator with warm sunset scattering band
+  // 4. Crisp Day/Night Terminator (smoothstep(-0.08, 0.25, NoL))
   float NoL = dot(N, L);
   float baseNoL = dot(baseN, L);
-  float day = smoothstep(-0.20, 0.38, NoL);
-  float twilightBand = exp(-pow((baseNoL - 0.02) / 0.16, 2.0)) * 0.28;
+  float day = smoothstep(-0.08, 0.25, NoL);
+  float twilightBand = exp(-pow((baseNoL - 0.02) / 0.14, 2.0)) * 0.24;
 
-  // Blinn-Phong sun specular glint masked strictly to ocean pixels
+  // Ocean Blinn-Phong specular glint
   vec3 H = normalize(L + V);
-  float specBase = pow(max(dot(baseN, H), 0.0), 72.0);
-  float oceanSpec = specBase * (1.0 - landMask) * day * 0.72;
-  vec3 specColor = mix(uRimColor, uBone, 0.6) * oceanSpec;
+  float specBase = pow(max(dot(baseN, H), 0.0), 64.0);
+  float oceanSpec = specBase * (1.0 - landMask) * (1.0 - cloudDensity) * day * 0.75;
+  vec3 specColor = vec3(0.85, 0.95, 1.0) * oceanSpec;
 
-  // Night-side golden city light clusters & Central Asian telemetry network
+  // Darken surface under cloud shadows during daylight
+  surfaceColor *= (1.0 - cloudShadow * day);
+
+  // Night-side subtle golden city light clusters
   vec3 tDir = normalize(uTashkentLocal);
   float distTashkent = distance(nLocal, tDir);
-  float cityNoise = pow( clamp(fbm(nLocal * 18.0), 0.0, 1.0), 4.2 );
-  float regionalHub = exp(-distTashkent * 3.8);
-  float nightMask = smoothstep(0.18, -0.25, baseNoL) * landMask;
-  vec3 cityLights = mix(uSoil, uBone, 0.35) * (cityNoise * 2.4 + regionalHub * 0.45) * nightMask * 0.85;
+  float cityNoise = pow(clamp(fbm(nLocal * 16.0), 0.0, 1.0), 4.2);
+  float regionalHub = exp(-distTashkent * 4.0);
+  float nightMask = smoothstep(0.12, -0.18, baseNoL) * landMask;
+  vec3 cityLights = uCityLights * (cityNoise * 2.2 + regionalHub * 0.6) * nightMask * 0.75;
 
-  // Crisp Tashkent telemetry radar ring
-  float coreHalo = exp(-distTashkent * 34.0) * 0.65;
-  float radarPhase = fract(uTime * 0.55);
-  float radarRadius = 0.025 + radarPhase * 0.13;
-  float radarRing = exp(-pow((distTashkent - radarRadius) / 0.007, 2.0)) * pow(1.0 - radarPhase, 1.5);
+  // Blend in illuminated clouds with subtle Rayleigh tint
+  vec3 cloudColor = mix(vec3(0.08, 0.12, 0.20), uBone, day);
+  surfaceColor = mix(surfaceColor, cloudColor, cloudDensity * 0.88);
 
-  // Fresnel atmosphere surface rim
+  // 5. Thin Rayleigh Atmospheric Limb Halo
   float fres = pow(1.0 - max(dot(baseN, V), 0.0), uRimPower);
-  float rim = fres * mix(0.42, 1.0, smoothstep(-0.3, 0.5, baseNoL)) * uRimIntensity;
+  float rayleighSun = mix(0.35, 1.0, smoothstep(-0.25, 0.45, baseNoL));
+  float rayleighRim = fres * rayleighSun * uRimIntensity;
+  vec3 atmosphericRim = mix(uRimColor, vec3(0.55, 0.82, 1.0), 0.45) * rayleighRim * 1.05;
 
-  vec3 litSurface = surfaceColor * (0.14 + day * 0.86)
-                  + uSoil * twilightBand * landMask
+  vec3 litSurface = surfaceColor * (0.05 + day * 0.95)
+                  + uLandArid * twilightBand * landMask
                   + specColor
-                  + cityLights;
-  litSurface += uHeart * coreHalo;
-  litSurface += uRimColor * radarRing * 0.85 * uRimIntensity;
-  vec3 finalColor = litSurface + mix(uRimColor, uBone, fres * 0.35) * rim * 1.15;
+                  + cityLights
+                  + atmosphericRim;
 
-  gl_FragColor = vec4(finalColor, 1.0);
+  gl_FragColor = vec4(litSurface, 1.0);
 }
 `;
 
@@ -195,11 +207,11 @@ void main() {
   vec3 V = normalize(cameraPosition - vPosW);
 
   float viewDot = max(dot(-N, V), 0.0);
-  float limb = pow(1.0 - viewDot, 2.6) * smoothstep(0.0, 0.46, viewDot);
-  float sunWeight = mix(0.38, 1.0, smoothstep(-0.35, 0.55, dot(N, normalize(uSunDir))));
-  float alpha = limb * sunWeight * uRimIntensity * 0.82;
+  float limb = pow(1.0 - viewDot, 3.2) * smoothstep(0.0, 0.38, viewDot);
+  float sunWeight = mix(0.30, 1.0, smoothstep(-0.30, 0.50, dot(N, normalize(uSunDir))));
+  float alpha = limb * sunWeight * uRimIntensity * 0.85;
 
-  vec3 col = mix(uVoidColor, uRimColor, clamp(limb * 1.3, 0.0, 1.0));
+  vec3 col = mix(uVoidColor, mix(uRimColor, vec3(0.50, 0.80, 1.0), 0.4), clamp(limb * 1.4, 0.0, 1.0));
   gl_FragColor = vec4(col, alpha);
 }
 `;
@@ -224,7 +236,7 @@ export function getEarthPosition(
   if (isPortrait) {
     return new THREE.Vector3(0, viewportHeight * 0.46, -0.6);
   }
-  return new THREE.Vector3(-viewportWidth * 0.37, -viewportHeight * 0.12, -0.5);
+  return new THREE.Vector3(-viewportWidth * 0.48, -viewportHeight * 0.12, -0.5);
 }
 
 export function getTashkentWorldAnchor(
@@ -273,17 +285,18 @@ export default function Earth({ isPortrait }: EarthProps) {
         uRimIntensity: { value: 0 },
         uRimPower: { value: RIM_POWER },
         uTime: { value: 0 },
-        uLand: { value: new THREE.Color(COLORS.vigor) },
-        uSoil: { value: new THREE.Color(COLORS.soil) },
-        uOceanDeep: { value: new THREE.Color("#06162E") },
-        uOceanMid: { value: new THREE.Color("#0D3B5E") },
-        uHeart: { value: new THREE.Color(COLORS.heart) },
+        uOceanAbyss: { value: new THREE.Color("#040D1A") },
+        uOceanMid: { value: new THREE.Color("#0A2A4A") },
+        uLandTemperate: { value: new THREE.Color("#1B3B2B") },
+        uLandArid: { value: new THREE.Color("#5C4D3C") },
+        uSnow: { value: new THREE.Color("#E6ECEF") },
         uBone: { value: new THREE.Color(COLORS.bone) },
+        uCityLights: { value: new THREE.Color(COLORS.soil) },
         uTashkentLocal: { value: localTashkent },
       },
     });
 
-    const hGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.13, 48, 48);
+    const hGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.11, 48, 48);
     const hMat = new THREE.ShaderMaterial({
       vertexShader: HALO_VERT,
       fragmentShader: HALO_FRAG,

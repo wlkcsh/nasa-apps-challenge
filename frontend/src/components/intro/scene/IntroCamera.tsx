@@ -22,7 +22,7 @@ export default function IntroCamera({
   isPortrait,
   rocketGroupRef,
 }: IntroCameraProps) {
-  const { camera } = useThree();
+  const { camera, viewport } = useThree();
   const pointerTarget = useRef({ x: 0, y: 0 });
   const pointerCurrent = useRef({ x: 0, y: 0 });
   const isCoarsePointer = useRef(false);
@@ -58,17 +58,77 @@ export default function IntroCamera({
       );
     }
 
-    const rocket = rocketGroupRef.current;
-    const rocketTrackX = rocket ? rocket.position.x * CAMERA.track : 0;
-    const portraitFramingY = isPortrait
-      ? (0.5 - introState.p) * PORTRAIT_STACK_SPAN
-      : 0;
+    const p = introState.p;
+    const W = viewport.width;
 
-    camera.position.x =
-      introState.camX + rocketTrackX + pointerCurrent.current.x;
-    camera.position.y = portraitFramingY + pointerCurrent.current.y;
-    camera.position.z = introState.camZ;
-    camera.lookAt(0, portraitFramingY * 0.35, 0);
+    let targetCamX = 0;
+    let camLookX = 0;
+    let targetCamY = 0;
+    let camLookY = 0;
+
+    if (isPortrait) {
+      // In portrait: track vertically from Earth (top) to Mars (bottom)
+      const portraitFramingY = (0.5 - p) * PORTRAIT_STACK_SPAN * (viewport.height / 7.5);
+      targetCamY = portraitFramingY;
+      camLookY = portraitFramingY * 0.35;
+      targetCamX = 0;
+      camLookX = 0;
+    } else {
+      // In landscape: Cinematic Camera Pan tracking the rocket's horizontal flight across space
+      // 1. p in [0.0, 0.30]: Earth framed on left, pans right so Earth exits off-screen left by p = 0.30
+      // 2. p in [0.30, 0.68]: Deep space empty corridor during two-stage separation
+      // 3. p in [0.68, 0.90]: Mars smoothly enters on the right, settling without clipping by p = 0.85
+      if (p <= 0.30) {
+        const t = p / 0.30;
+        const ease = t * t * (3 - 2 * t);
+        targetCamX = THREE.MathUtils.lerp(-W * 0.22, W * 0.16, ease);
+      } else if (p <= 0.68) {
+        const t = (p - 0.30) / (0.68 - 0.30);
+        const ease = t * t * (3 - 2 * t);
+        targetCamX = THREE.MathUtils.lerp(W * 0.16, W * 0.18, ease);
+      } else if (p <= 0.85) {
+        const t = (p - 0.68) / (0.85 - 0.68);
+        const ease = t * t * (3 - 2 * t);
+        targetCamX = THREE.MathUtils.lerp(W * 0.18, W * 0.20, ease);
+      } else {
+        targetCamX = W * 0.20;
+      }
+
+      // Smooth envelope-weighted dynamic tracking on the rocket (C1 continuous)
+      const rocket = rocketGroupRef.current;
+      if (rocket) {
+        const leadEnvelope =
+          THREE.MathUtils.smoothstep(p, 0.08, 0.22) *
+          (1.0 - THREE.MathUtils.smoothstep(p, 0.76, 0.88));
+        const rocketOffset = (rocket.position.x - targetCamX) * 0.12 * leadEnvelope;
+        targetCamX += rocketOffset;
+      }
+
+      camLookX = targetCamX;
+      // Flight curve & FHTM sits at exact vertical center (y = 0.0)
+      targetCamY = 0.0;
+      camLookY = 0.0;
+    }
+
+    // Pure continuous p-driven camZ evaluation (zero GSAP timeline jumps)
+    let targetCamZ: number = CAMERA.z[1];
+    if (p > 0.85) {
+      const morphT = THREE.MathUtils.smoothstep((p - 0.85) / 0.15, 0, 1);
+      targetCamZ = THREE.MathUtils.lerp(CAMERA.z[1], CAMERA.z[2], morphT);
+    }
+    introState.camZ = targetCamZ;
+    introState.camX = targetCamX;
+    introState.camLookX = camLookX;
+
+    camera.position.x = targetCamX + pointerCurrent.current.x;
+    camera.position.y = targetCamY + pointerCurrent.current.y;
+    camera.position.z = targetCamZ;
+
+    camera.lookAt(
+      camLookX + pointerCurrent.current.x * 0.5,
+      camLookY + pointerCurrent.current.y * 0.5,
+      0
+    );
   });
 
   return (

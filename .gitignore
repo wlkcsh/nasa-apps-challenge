@@ -11,3 +11,12 @@ build/
 .DS_Store
 *.tsbuildinfo
 NASA_Space_App_Challenge/
+
+# Render caches and exports
+previews/
+preview_animated_a/
+preview_animated_b/
+frontend-export/
+test_deck.pptx
+slide5_*.png
+

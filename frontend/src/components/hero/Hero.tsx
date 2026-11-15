@@ -48,7 +48,7 @@ const Hero = forwardRef<HTMLElement, HeroProps>(
             data-hero-title
             className="font-display text-5xl font-semibold tracking-tight text-bone sm:text-7xl md:text-8xl"
           >
-            Field Shift UZ
+            Agriverto
           </h1>
 
           <p

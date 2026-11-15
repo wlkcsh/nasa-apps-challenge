@@ -644,7 +644,7 @@ export default function RotationTimeline({
               {/* Card Footer */}
               <div className="pt-4 border-t border-paper-200 flex items-center justify-between text-[11px] text-espresso-600 font-mono mt-4">
                 <span className="text-harvest-700 font-semibold">
-                  Field Shift UZ - NASA Space Apps 2026
+                  Agriverto - NASA Space Apps 2026
                 </span>
                 <span>Card 5 of 5</span>
               </div>

@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Agriverto — NASA Space Apps 3D Planetary Decision Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Embedded High-Res Photoreal NASA Earth Texture & Vector Landscapes (Zero-CORS, Works over file://) -->
+  <script src="static/earth_texture.js"></script>
+  
+  <script>
+  window.FERGANA_LANDSCAPE_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIwIDEwODAiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIHNsaWNlIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ic2t5IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwNDBkMDgiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI0MCUiIHN0b3AtY29sb3I9IiMwODFlMTMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI3MCUiIHN0b3AtY29sb3I9IiMxMTM4MjQiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI4OCUiIHN0b3AtY29sb3I9IiMyMjVjM2MiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMzRkMzk5IiBzdG9wLW9wYWNpdHk9IjAuNiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibTEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2UyZThmMCIgc3RvcC1vcGFjaXR5PSIwLjgiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIyNSUiIHN0b3AtY29sb3I9IiMxYTNkMmIiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGQyMzE4Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJtMiIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjY2JkNWUxIiBzdG9wLW9wYWNpdHk9IjAuNSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjMwJSIgc3RvcC1jb2xvcj0iIzE0MzUyMyIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwOTFhMTEiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InZhbGxleSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMGExZDEzIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzA1MTIwYSIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgCiAgPCEtLSBTa3kgLS0+CiAgPHJlY3Qgd2lkdGg9IjE5MjAiIGhlaWdodD0iMTA4MCIgZmlsbD0idXJsKCNza3kpIi8+CiAgCiAgPCEtLSBEaXN0YW50IFRpYW4gU2hhbiBNb3VudGFpbiBQZWFrcyAtLT4KICA8cG9seWdvbiBwb2ludHM9IjAsNjgwIDE4MCw1NjAgMzYwLDYyMCA1NDAsNTEwIDcyMCw1OTAgOTIwLDQ4MCAxMTAwLDU3MCAxMzIwLDQ5MCAxNTQwLDYxMCAxNzQwLDUzMCAxOTIwLDY0MCAxOTIwLDEwODAgMCwxMDgwIiBmaWxsPSJ1cmwoI20xKSIgb3BhY2l0eT0iMC43NSIvPgogIAogIDwhLS0gQ2xvc2VyIEZvb3RoaWxscyAtLT4KICA8cG9seWdvbiBwb2ludHM9IjAsNzQwIDIyMCw2NDAgNDYwLDcxMCA2ODAsNjIwIDk0MCw2OTAgMTE4MCw2MTAgMTQyMCw2ODAgMTY4MCw2MzAgMTkyMCw3MjAgMTkyMCwxMDgwIDAsMTA4MCIgZmlsbD0idXJsKCNtMikiIG9wYWNpdHk9IjAuOSIvPgogIAogIDwhLS0gVmFsbGV5IEJhc2luIEZsb29yIC0tPgogIDxyZWN0IHk9IjcyMCIgd2lkdGg9IjE5MjAiIGhlaWdodD0iMzYwIiBmaWxsPSJ1cmwoI3ZhbGxleSkiLz4KICAKICA8IS0tIFBlcnNwZWN0aXZlIEZhcm1sYW5kIEdyaWQgKEZlcmdhbmEgRmllbGQgUGFyY2VscykgLS0+CiAgPGcgb3BhY2l0eT0iMC42NSI+CiAgICA8IS0tIENhbmFsIC8gUml2ZXIgLS0+CiAgICA8cGF0aCBkPSJNODgwLDcyMCBROTIwLDg0MCA5NjAsOTIwIFQxMDQwLDEwODAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzM4YmRmOCIgc3Ryb2tlLXdpZHRoPSI0IiBvcGFjaXR5PSIwLjciIGZpbHRlcj0iZHJvcC1zaGFkb3coMCAwIDhweCAjMzhiZGY4KSIvPgogICAgCiAgICA8IS0tIEFncmljdWx0dXJhbCBwbG90IHF1YWRyaWxhdGVyYWxzIGluIHBlcnNwZWN0aXZlIC0tPgogICAgPHBvbHlnb24gcG9pbnRzPSIyMDAsNzQwIDQ1MCw3NDAgNDEwLDgyMCAxMzAsODIwIiBmaWxsPSIjMWU0ZDMyIiBzdHJva2U9IiMxMGI5ODEiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLW9wYWNpdHk9IjAuMyIvPgogICAgPHBvbHlnb24gcG9pbnRzPSI0NzAsNzQwIDcyMCw3NDAgNzAwLDgyMCA0MzAsODIwIiBmaWxsPSIjMmQ2YTQ1IiBzdHJva2U9IiMxMGI5ODEiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLW9wYWNpdHk9IjAuNCIvPgogICAgPHBvbHlnb24gcG9pbnRzPSI3NDAsNzQwIDg4MCw3NDAgODYwLDgyMCA3MjAsODIwIiBmaWxsPSIjOWE3YjRmIiBvcGFjaXR5PSIwLjciIHN0cm9rZT0iI2UyZGRkMSIgc3Ryb2tlLXdpZHRoPSIwLjUiLz4gPCEtLSBXaGVhdCBzdHViYmxlIC0tPgogICAgCiAgICA8cG9seWdvbiBwb2ludHM9Ijk4MCw3NDAgMTE1MCw3NDAgMTE4MCw4MjAgOTkwLDgyMCIgZmlsbD0iIzFlNGQzMiIgc3Ryb2tlPSIjMTBiOTgxIiBzdHJva2Utd2lkdGg9IjEiIHN0cm9rZS1vcGFjaXR5PSIwLjMiLz4KICAgIDxwb2x5Z29uIHBvaW50cz0iMTE3MCw3NDAgMTQ1MCw3NDAgMTUxMCw4MjAgMTIwMCw4MjAiIGZpbGw9IiMyZDZhNDUiIHN0cm9rZT0iIzEwYjk4MSIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2Utb3BhY2l0eT0iMC40Ii8+CiAgICA8cG9seWdvbiBwb2ludHM9IjE0NzAsNzQwIDE3ODAsNzQwIDE4NjAsODIwIDE1MzAsODIwIiBmaWxsPSIjMTUzZDI2IiBzdHJva2U9IiMxMGI5ODEiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLW9wYWNpdHk9IjAuMyIvPgogICAgCiAgICA8IS0tIE1pZCBncm91bmQgcm93cyAtLT4KICAgIDxwb2x5Z29uIHBvaW50cz0iMTAwLDgzMCA0MDAsODMwIDM1MCw5NjAgMjAsOTYwIiBmaWxsPSIjMjI1ODM4IiBzdHJva2U9IiMzNGQzOTkiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLW9wYWNpdHk9IjAuNSIvPgogICAgPHBvbHlnb24gcG9pbnRzPSI0MjAsODMwIDY5MCw4MzAgNjYwLDk2MCAzNzAsOTYwIiBmaWxsPSIjMTBiOTgxIiBvcGFjaXR5PSIwLjM1IiBzdHJva2U9IiMzNGQzOTkiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2Utb3BhY2l0eT0iMC43Ii8+IDwhLS0gTXVuZyBiZWFuIGFjdGl2ZSBkb3VibGUtY3JvcCAtLT4KICAgIDxwb2x5Z29uIHBvaW50cz0iNzEwLDgzMCA4NTAsODMwIDgzMCw5NjAgNjgwLDk2MCIgZmlsbD0iIzFlNGQzMiIgc3Ryb2tlPSIjMTBiOTgxIiBzdHJva2Utd2lkdGg9IjEiIHN0cm9rZS1vcGFjaXR5PSIwLjMiLz4KICAgIAogICAgPHBvbHlnb24gcG9pbnRzPSIxMDAwLDgzMCAxMTcwLDgzMCAxMTkwLDk2MCAxMDEwLDk2MCIgZmlsbD0iIzhhNmQ0MyIgb3BhY2l0eT0iMC42IiBzdHJva2U9IiNlMmRkZDEiIHN0cm9rZS13aWR0aD0iMC41Ii8+CiAgICA8cG9seWdvbiBwb2ludHM9IjExOTAsODMwIDE1MDAsODMwIDE1NTAsOTYwIDEyMTAsOTYwIiBmaWxsPSIjMmQ2YTQ1IiBzdHJva2U9IiMzNGQzOTkiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLW9wYWNpdHk9IjAuNSIvPgogICAgPHBvbHlnb24gcG9pbnRzPSIxNTIwLDgzMCAxODUwLDgzMCAxOTEwLDk2MCAxNTcwLDk2MCIgZmlsbD0iIzFlNGQzMiIgc3Ryb2tlPSIjMTBiOTgxIiBzdHJva2Utd2lkdGg9IjEiIHN0cm9rZS1vcGFjaXR5PSIwLjMiLz4KICA8L2c+CiAgCiAgPCEtLSBWYWxsZXkgRmxvb3IgQXRtb3NwaGVyaWMgTWlzdCAtLT4KICA8cmVjdCB5PSI3MDAiIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjgwIiBmaWxsPSJ1cmwoI3NreSkiIG9wYWNpdHk9IjAuNCIvPgo8L3N2Zz4=";
+
+  window.FERGANA_FORE_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIwIDEwODAiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIHNsaWNlIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icGxhbnRHcmFkIiB4MT0iMCUiIHkxPSIxMDAlIiB4Mj0iMCUiIHkyPSIwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwMjBiMDYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI3MCUiIHN0b3AtY29sb3I9IiMwODIwMTIiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMTBiOTgxIiBzdG9wLW9wYWNpdHk9IjAuNiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CgogIDwhLS0gTGVmdCBTaWRlOiBXaGVhdCBTdGFsa3MgJiBHb2xkZW4gSHVzayBTaWxob3VldHRlcyAtLT4KICA8ZyBmaWxsPSJ1cmwoI3BsYW50R3JhZCkiIG9wYWNpdHk9IjAuOTUiPgogICAgPCEtLSBTdGFsayAxIC0tPgogICAgPHBhdGggZD0iTTQwLDEwODAgUTkwLDk1MCAxMTAsODQwIFExMTgsODAwIDEzMCw3NjAgUTEzOCw3OTAgMTIwLDg1MCBROTAsOTYwIDUwLDEwODAgWiIvPgogICAgPCEtLSBXaGVhdCBFYXIgMSAtLT4KICAgIDxlbGxpcHNlIGN4PSIxMzUiIGN5PSI3NTAiIHJ4PSIxNCIgcnk9IjQwIiB0cmFuc2Zvcm09InJvdGF0ZSgxNSAxMzUgNzUwKSIvPgogICAgPGVsbGlwc2UgY3g9IjEyNSIgY3k9IjcyMCIgcng9IjEyIiByeT0iMzUiIHRyYW5zZm9ybT0icm90YXRlKDEwIDEyNSA3MjApIi8+CiAgICA8ZWxsaXBzZSBjeD0iMTE4IiBjeT0iNjkwIiByeD0iMTAiIHJ5PSIzMCIgdHJhbnNmb3JtPSJyb3RhdGUoNSAxMTggNjkwKSIvPgogICAgPCEtLSBXaGlza2VyIGF3bnMgLS0+CiAgICA8cGF0aCBkPSJNMTM1LDczMCBRMTcwLDcwMCAyMTAsNjgwIE0xMjUsNzAwIFExNTAsNjYwIDE4MCw2MzAgTTExOCw2NzAgUTEzNSw2MjAgMTUwLDU4MCIgc3Ryb2tlPSIjMzRkMzk5IiBzdHJva2Utd2lkdGg9IjEuNSIgb3BhY2l0eT0iMC41IiBmaWxsPSJub25lIi8+CgogICAgPCEtLSBTdGFsayAyIC0tPgogICAgPHBhdGggZD0iTTEyMCwxMDgwIFExNjAsOTQwIDE5MCw4MjAgUTIwNSw3NjAgMjE1LDcwMCBRMjE4LDc0MCAyMDAsODMwIFExNjUsOTYwIDEzMCwxMDgwIFoiLz4KICAgIDxlbGxpcHNlIGN4PSIyMTgiIGN5PSI2ODAiIHJ4PSIxNCIgcnk9IjQyIiB0cmFuc2Zvcm09InJvdGF0ZSgxOCAyMTggNjgwKSIvPgogICAgPGVsbGlwc2UgY3g9IjIxMCIgY3k9IjY0MCIgcng9IjEyIiByeT0iMzYiIHRyYW5zZm9ybT0icm90YXRlKDEyIDIxMCA2NDApIi8+CiAgICA8cGF0aCBkPSJNMjE4LDY2MCBRMjYwLDYzMCAzMTAsNjEwIE0yMTAsNjIwIFEyNDAsNTgwIDI3MCw1NDAiIHN0cm9rZT0iIzM0ZDM5OSIgc3Ryb2tlLXdpZHRoPSIxLjUiIG9wYWNpdHk9IjAuNSIgZmlsbD0ibm9uZSIvPgogIDwvZz4KCiAgPCEtLSBSaWdodCBTaWRlOiBNdW5nIEJlYW4gTGVndW1lIENhbm9weSAoVHJpZm9saWF0ZSBsZWF2ZXMgJiBoYW5naW5nIHBvZHMpIC0tPgogIDxnIGZpbGw9InVybCgjcGxhbnRHcmFkKSIgb3BhY2l0eT0iMC45NSI+CiAgICA8IS0tIENlbnRyYWwgU3RlbXMgLS0+CiAgICA8cGF0aCBkPSJNMTg4MCwxMDgwIFExODIwLDkyMCAxNzgwLDgyMCBRMTc0MCw3NDAgMTcwMCw2ODAgUTE3MTUsNzMwIDE3NTAsODIwIFExNzkwLDkyMCAxODYwLDEwODAgWiIvPgogICAgPCEtLSBCcm9hZCBMZWF2ZXMgLS0+CiAgICA8cGF0aCBkPSJNMTcwMCw2ODAgUTE2NDAsNjUwIDE2MDAsNjcwIFExNjMwLDcxMCAxNzAwLDY4MCBaIi8+CiAgICA8cGF0aCBkPSJNMTcwMCw2ODAgUTE2ODAsNjEwIDE3MTAsNTgwIFExNzMwLDYyMCAxNzAwLDY4MCBaIi8+CiAgICA8cGF0aCBkPSJNMTcwMCw2ODAgUTE3NjAsNjQwIDE3ODAsNjcwIFExNzQwLDcxMCAxNzAwLDY4MCBaIi8+CgogICAgPCEtLSBIYW5naW5nIFBvZHMgKE5pdHJvZ2VuIEZpeGF0aW9uKSAtLT4KICAgIDxwYXRoIGQ9Ik0xNzEwLDcyMCBRMTY4MCw3ODAgMTY3MCw4MzAgUTE2ODUsODMwIDE3MjAsNzMwIFoiIGZpbGw9IiMxMGI5ODEiIG9wYWNpdHk9IjAuOCIvPgogICAgPHBhdGggZD0iTTE3NTAsNzUwIFExNzMwLDgxMCAxNzIwLDg2MCBRMTczNSw4NjAgMTc2MCw3NjAgWiIgZmlsbD0iIzEwYjk4MSIgb3BhY2l0eT0iMC44Ii8+CgogICAgPCEtLSBTZWNvbmRhcnkgU3RhbGsgLS0+CiAgICA8cGF0aCBkPSJNMTc2MCwxMDgwIFExNzIwLDk1MCAxNjcwLDg2MCBRMTY1MCw4MjAgMTYyMCw3ODAgUTE2MzUsODIwIDE2NjAsODgwIFExNzAwLDk3MCAxNzQwLDEwODAgWiIvPgogICAgPHBhdGggZD0iTTE2MjAsNzgwIFExNTYwLDc2MCAxNTIwLDc5MCBRMTU2MCw4MjAgMTYyMCw3ODAgWiIvPgogICAgPHBhdGggZD0iTTE2MjAsNzgwIFExNjEwLDcxMCAxNjQwLDY4MCBRMTY2MCw3MjAgMTYyMCw3ODAgWiIvPgogIDwvZz4KCiAgPCEtLSBCb3R0b20gRWRnZSBWaWduZXR0ZSAtLT4KICA8cmVjdCB5PSI5ODAiIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNwbGFudEdyYWQpIiBvcGFjaXR5PSIwLjYiLz4KPC9zdmc+";
+
+  </script>
+
+  <!-- External scripts -->
+  <script src="static/landscape_fore.js"></script>
+
+  <style>
+    :root {
+      --emerald: #10b981;
+      --mint: #34d399;
+      --forest: #064e3b;
+      --deep: #07150e;
+      --rust: #f97316;
+      --beige: #f7f5ee;
+      --gold: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--deep);
+      color: #fff;
+      font-family: Montserrat, system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+    
+    .hero {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: radial-gradient(65% 75% at 50% 48%, #143d28 0%, #0c2518 36%, #07150e 70%, #030805 100%);
+    }
+    .hero > * { position: absolute; }
+
+    /* Monumental Typography */
+    #word0 {
+      left: 50%;
+      top: 50%;
+      font-weight: 900;
+      font-size: min(25vw, 44vh);
+      line-height: .8;
+      letter-spacing: -.04em;
+      white-space: nowrap;
+      z-index: 2;
+      color: rgba(255, 255, 255, 0.95);
+      will-change: transform, clip-path, opacity;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      text-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+    #eyebrow {
+      left: 50%;
+      top: 14vh;
+      z-index: 3;
+      font-weight: 600;
+      font-size: clamp(11px, 1.2vw, 15px);
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: var(--mint);
+      transform: translateX(-50%);
+      pointer-events: none;
+      background: rgba(12, 36, 24, 0.7);
+      padding: 6px 20px;
+      border-radius: 20px;
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      backdrop-filter: blur(8px);
+    }
+    #gl {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 4;
+      cursor: grab;
+      touch-action: none;
+    }
+    #gl.drag { cursor: grabbing; }
+    #dust {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+    }
+    #flare {
+      z-index: 1;
+      width: 54vmin;
+      height: 54vmin;
+      margin: -27vmin;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(closest-side, rgba(167, 243, 208, 0.85), rgba(52, 211, 153, 0.35) 35%, rgba(16, 185, 129, 0.08) 65%, transparent);
+    }
+
+    
+    /* Initial state opacity gating to prevent flash of unpositioned content */
+    #pin, #word1, #sites, #card, #region, #land, #fore, #dest, #fog, #bar {
+      opacity: 0;
+    }
+
+    /* Radar Pin */
+    #pin {
+      z-index: 6;
+      left: 0;
+      top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      pointer-events: none;
+      white-space: nowrap;
+      color: #fff;
+      background: rgba(7, 21, 14, 0.85);
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(52, 211, 153, 0.5);
+      backdrop-filter: blur(8px);
+    }
+    #pin i {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--mint);
+      position: relative;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.6);
+    }
+    #pin i::after {
+      content: "";
+      position: absolute;
+      inset: -14px;
+      border-radius: 50%;
+      border: 1px solid var(--mint);
+      animation: pulse 2s ease-out infinite;
+    }
+    @keyframes pulse {
+      from { transform: scale(.4); opacity: 1; }
+      to { transform: scale(1.6); opacity: 0; }
+    }
+
+    #word1 {
+      left: 50%;
+      top: 0;
+      z-index: 6;
+      font-weight: 900;
+      font-size: min(8.5vw, 17vh);
+      letter-spacing: -.02em;
+      line-height: 1;
+      color: rgba(255, 255, 255, .7);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* Preset Sites List */
+    #sites {
+      right: 5.5%;
+      top: 50%;
+      z-index: 7;
+      list-style: none;
+      display: grid;
+      gap: clamp(24px, 5vh, 48px);
+      transform: translateY(-50%);
+    }
+    #sites::before {
+      content: "";
+      position: absolute;
+      right: 6px;
+      top: 8px;
+      bottom: 8px;
+      width: 1px;
+      background: rgba(255, 255, 255, .3);
+    }
+    #sites li {
+      position: relative;
+      text-align: right;
+      padding-right: 32px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .75);
+      transition: font-size .3s, color .3s;
+    }
+    #sites li:hover { color: #fff; }
+    #sites li::after {
+      content: "";
+      position: absolute;
+      right: 2px;
+      top: 50%;
+      width: 9px;
+      height: 9px;
+      margin-top: -5px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .3s, box-shadow .3s, background .3s;
+    }
+    #sites li.on {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--mint);
+    }
+    #sites li.on::after {
+      background: var(--mint);
+      transform: scale(1.6);
+      box-shadow: 0 0 0 6px rgba(52, 211, 153, .35);
+    }
+
+    /* Telemetry Info Card */
+    #card {
+      right: calc(5.5% + 220px);
+      top: 0;
+      z-index: 7;
+      width: clamp(260px, 22vw, 320px);
+      background: rgba(12, 34, 23, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      border-radius: 6px;
+      padding: 18px 20px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, .5);
+      transition: transform .4s ease, opacity .4s ease;
+    }
+    #card .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--mint);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    #card h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    #card .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, .1);
+    }
+    #card .stat-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    #card .stat-lbl {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    #card a.action-btn {
+      display: block;
+      margin-top: 14px;
+      background: var(--emerald);
+      color: #032014;
+      text-align: center;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      border-radius: 4px;
+      transition: background .2s, transform .2s;
+    }
+    #card a.action-btn:hover {
+      background: var(--mint);
+      transform: translateY(-1px);
+    }
+
+    #region {
+      left: 50%;
+      top: 50%;
+      z-index: 7;
+      transform: translate(-50%, -50%);
+      font-weight: 800;
+      font-size: clamp(24px, 3.2vw, 50px);
+      letter-spacing: .08em;
+      pointer-events: none;
+      color: #fff;
+    }
+
+    /* =========================================================================
+       LANDING SURFACE & AGRICULTURAL FIELD LAYERS (SCALE 3)
+       ========================================================================= */
+    #land, #fore {
+      inset: 0;
+      background-size: cover;
+      background-position: center bottom;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+    #land {
+      z-index: 8;
+      will-change: transform;
+      background: linear-gradient(to top, #143521 0%, #1e4a30 35%, #0e291b 70%, #06150e 100%);
+    }
+    #fore {
+      z-index: 10;
+      will-change: transform;
+    }
+    
+    #dest {
+      left: 50%;
+      top: 13vh;
+      transform: translateX(-50%);
+      width: min(92vw, 1080px);
+      z-index: 9;
+      text-align: center;
+      pointer-events: auto;
+    }
+    #dest small {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--mint);
+      background: rgba(7, 26, 17, 0.7);
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      backdrop-filter: blur(6px);
+    }
+    #dest b {
+      display: block;
+      margin-top: .1em;
+      font-weight: 900;
+      font-size: clamp(32px, 5vw, 68px);
+      line-height: 1.05;
+      letter-spacing: -.03em;
+      color: #f7f5ee;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+    #dest .telemetry-pills {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .pill-chip {
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(52, 211, 153, 0.5);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mint);
+      backdrop-filter: blur(6px);
+    }
+
+    /* 3-Strategy Comparison Cockpit in Center */
+    .field-cockpit {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 20px;
+      margin-top: 24px;
+      text-align: left;
+    }
+    .crop-card {
+      background: rgba(10, 28, 19, 0.88);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      border-radius: 8px;
+      padding: 20px 24px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    }
+    .crop-card.recommended {
+      border: 1.5px solid var(--mint);
+      background: rgba(12, 38, 26, 0.92);
+      box-shadow: 0 20px 48px rgba(16, 185, 129, 0.2);
+    }
+    .crop-card .card-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .crop-card .card-badge.hero-badge {
+      color: var(--mint);
+    }
+    .crop-card h4 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .crop-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .crop-row:last-child { border-bottom: none; }
+    .crop-row span { color: #cbd5e1; }
+    .crop-row strong {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #fff;
+    }
+    .crop-row strong.warn { color: #fb923c; }
+    .crop-row strong.success { color: var(--mint); }
+
+    #fog {
+      inset: 0;
+      z-index: 11;
+      pointer-events: none;
+      background: radial-gradient(70% 64% at 50% 46%, #d1fae5 0%, #a7f3d0 45%, #065f46 100%);
+    }
+
+    /* Action Booking Bar at Bottom */
+    #bar {
+      left: 50%;
+      bottom: 5vh;
+      z-index: 12;
+      width: min(90vw, 980px);
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr auto;
+      background: #f7f5ee;
+      color: #122c1e;
+      border-radius: 6px;
+      box-shadow: 0 28px 64px rgba(0, 0, 0, .6);
+      transform: translateX(-50%);
+    }
+    #bar div {
+      padding: 14px 22px;
+      border-right: 1px solid #e2ddd1;
+    }
+    #bar label {
+      display: block;
+      font-weight: 600;
+      font-size: 9.5px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    #bar .bar-val {
+      margin-top: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 14px;
+      color: #064e3b;
+    }
+    #bar a.bar-btn {
+      background: var(--emerald);
+      color: #032014;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border-radius: 0 6px 6px 0;
+      transition: background .2s;
+    }
+    #bar a.bar-btn:hover { background: var(--mint); }
+
+    /* Chrome Navigation */
+    header {
+      left: 0;
+      right: 0;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      padding: clamp(16px, 3vh, 26px) clamp(20px, 3vw, 48px);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    header > * { pointer-events: auto; }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: auto;
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: -.02em;
+      text-transform: none;
+      color: #fff;
+    }
+    .logo span.badge {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: var(--mint);
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    header a.nav-link {
+      margin-left: 28px;
+      opacity: .85;
+      transition: opacity .2s, color .2s;
+    }
+    header a.nav-link:hover { opacity: 1; color: var(--mint); }
+    
+    #rail {
+      left: clamp(20px, 3vw, 48px);
+      top: 50%;
+      z-index: 20;
+      display: grid;
+      gap: 16px;
+      transform: translateY(-50%);
+    }
+    #rail button {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .35);
+      transition: background .3s, transform .3s;
+    }
+    #rail button.on {
+      background: var(--mint);
+      transform: scale(1.5);
+      box-shadow: 0 0 0 5px rgba(52, 211, 153, .3);
+    }
+    #hint {
+      left: 50%;
+      bottom: 3vh;
+      transform: translateX(-50%);
+      z-index: 7;
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      opacity: .8;
+      white-space: nowrap;
+      background: rgba(10, 26, 17, 0.6);
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    @media (max-width: 840px) {
+      #word0 { font-size: 28vw; }
+      #word1 { font-size: 14vw; }
+      #sites { right: 16px; top: auto; bottom: 12vh; transform: none; gap: 16px; }
+      #card { right: auto; left: 16px; bottom: 12vh; width: calc(100vw - 32px); }
+      #bar { grid-template-columns: 1fr; width: calc(100vw - 32px); bottom: 2vh; }
+      #bar div { border-right: 0; border-bottom: 1px solid #e2ddd1; padding: 10px 14px; }
+      .field-cockpit { grid-template-columns: 1fr; gap: 12px; }
+      #hint, #rail { display: none; }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+<main class="hero" id="hero">
+  <div id="word0">EARTH</div>
+  <div id="eyebrow">From Heart To Mars • NASA Space Apps 2026</div>
+  <div id="flare"></div>
+  <canvas id="gl"></canvas>
+  <canvas id="dust"></canvas>
+  
+  <div id="pin"><i></i><span>Fergana Basin (40.4°N, 71.8°E)</span></div>
+  <div id="word1">FERGANA</div>
+  <ul id="sites"></ul>
+  
+  <div id="card">
+    <div class="tag" id="cardTag">Target Preset Sector</div>
+    <h3 id="cardTitle">Fergana Valley</h3>
+    <div class="stats">
+      <div>
+        <div class="stat-val" id="statRain">194 mm</div>
+        <div class="stat-lbl">Rain / Year</div>
+      </div>
+      <div>
+        <div class="stat-val" id="statET">1,491 mm</div>
+        <div class="stat-lbl">Air Thirst (ET0)</div>
+      </div>
+      <div>
+        <div class="stat-val" id="statHeat">74 days</div>
+        <div class="stat-lbl">> 35°C Stress</div>
+      </div>
+      <div>
+        <div class="stat-val" id="statFallow">155 days</div>
+        <div class="stat-lbl">Bare Soil / Yr</div>
+      </div>
+    </div>
+    <a href="#" class="action-btn" id="diveBtn">Dive to Field →</a>
+  </div>
+  
+  <div id="region">FERGANA OASIS</div>
+  
+  <!-- Scale 3: Agricultural Landscape & Visual Field Dive -->
+  <div id="land"></div>
+  
+  <div id="dest">
+    <small id="destTag">Scale 3 — Field Ground Truth (213 HA)</small>
+    <b id="destName">Fergana Valley Farm</b>
+    <div class="telemetry-pills">
+      <span class="pill-chip">40.4215° N, 71.7638° E</span>
+      <span class="pill-chip">MODIS NDVI: Peak 0.82</span>
+      <span class="pill-chip">SMAP Moisture: Deficit Alert</span>
+    </div>
+
+    <!-- Side-by-Side Rotation Strategy Exhibit -->
+    <div class="field-cockpit">
+      <!-- Monoculture Baseline -->
+      <div class="crop-card baseline">
+        <div class="card-badge">01 HISTORICAL PRACTICE</div>
+        <h4>Winter Wheat → Cotton</h4>
+        <div class="crop-row">
+          <span>Bare Soil Window:</span>
+          <strong class="warn">155 days / year</strong>
+        </div>
+        <div class="crop-row">
+          <span>Biological Nitrogen:</span>
+          <strong>0 kg/ha (synthetic cost)</strong>
+        </div>
+        <div class="crop-row">
+          <span>Late Summer Water:</span>
+          <strong class="warn">High Deficit Vulnerability</strong>
+        </div>
+      </div>
+
+      <!-- Recommended Adaptation Pathway (Hero) -->
+      <div class="crop-card recommended">
+        <div class="card-badge hero-badge">★ RECOMMENDED ADAPTATION</div>
+        <h4>Winter Wheat → Mung Bean</h4>
+        <div class="crop-row">
+          <span>Bare Soil Window:</span>
+          <strong class="success">55 days (-100d protected)</strong>
+        </div>
+        <div class="crop-row">
+          <span>Biological Nitrogen:</span>
+          <strong class="success">+30 kg/ha N (rhizobial)</strong>
+        </div>
+        <div class="crop-row">
+          <span>Water Productivity:</span>
+          <strong class="success">+18% output / m³ consumed</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Foreground Crop Vegetation Silhouette -->
+  <div id="fore"></div>
+  <div id="fog"></div>
+  
+  <form id="bar" onsubmit="return false">
+    <div>
+      <label>Current Baseline</label>
+      <div class="bar-val">Winter Wheat → Cotton</div>
+    </div>
+    <div>
+      <label>Adaptive Pathway</label>
+      <div class="bar-val">Wheat → Mung Bean</div>
+    </div>
+    <div>
+      <label>Agronomic Win</label>
+      <div class="bar-val">+30 kg N/ha • -100d Bare Soil</div>
+    </div>
+    <a href="https://fromhearttomars.duckdns.org" target="_blank" class="bar-btn">Launch App →</a>
+  </form>
+
+  <header>
+    <a class="logo" href="#" id="home">
+      Agriverto <span class="badge">NASA SPACE APPS</span>
+    </a>
+    <a class="nav-link" href="#" id="navOrbit">01 Orbit</a>
+    <a class="nav-link" href="#" id="navRegion">02 Region</a>
+    <a class="nav-link" href="#" id="navField">03 Field</a>
+    <a class="nav-link" href="https://fromhearttomars.duckdns.org" target="_blank">Live Server ↗</a>
+  </header>
+
+  <div id="rail">
+    <button aria-label="Orbit View" id="dot0"></button>
+    <button aria-label="Regional Territory" id="dot1"></button>
+    <button aria-label="Field Landing" id="dot2"></button>
+  </div>
+  <div id="hint">Drag to spin Earth · Click or scroll to dive into field</div>
+</main>
+
+<script type="module">
+  import * as THREE from 'three';
+
+  const SITES = [
+    {
+      name: 'Fergana Valley',
+      lat: 40.42, lon: 71.76,
+      rain: '194 mm', et: '1,491 mm', heat: '74 days', fallow: '155 days',
+      u: (71.76 + 180) / 360, v: (90 - 40.42) / 180,
+      desc: 'Double-crop innovation: wheat followed by pulse legumes.'
+    },
+    {
+      name: 'Samarkand Region',
+      lat: 39.64, lon: 67.06,
+      rain: '350 mm', et: '1,380 mm', heat: '58 days', fallow: '140 days',
+      u: (67.06 + 180) / 360, v: (90 - 39.64) / 180,
+      desc: 'Alluvial valley with intensive cereal-cotton cultivation.'
+    },
+    {
+      name: 'Bukhara Oasis',
+      lat: 39.99, lon: 64.32,
+      rain: '145 mm', et: '1,620 mm', heat: '88 days', fallow: '175 days',
+      u: (64.32 + 180) / 360, v: (90 - 39.99) / 180,
+      desc: 'Arid saline zone requiring rigorous salt-tolerant cover crops.'
+    },
+    {
+      name: 'Karakalpakstan',
+      lat: 42.41, lon: 59.52,
+      rain: '110 mm', et: '1,540 mm', heat: '82 days', fallow: '185 days',
+      u: (59.52 + 180) / 360, v: (90 - 42.41) / 180,
+      desc: 'Aral basin margin facing extreme desiccating winds.'
+    }
+  ];
+
+  const FERGANA = SITES[0];
+
+  function dir(u, v) {
+    const ph = 2 * Math.PI * u;
+    const th = Math.PI * v;
+    return new THREE.Vector3(
+      -Math.cos(ph) * Math.sin(th),
+      Math.cos(th),
+      Math.sin(ph) * Math.sin(th)
+    );
+  }
+
+  function faceYaw(d) { return Math.atan2(-d.x, d.z); }
+  function faceLat(d) { return Math.asin(d.y); }
+
+  const glCanvas = document.getElementById('gl');
+  const dustCanvas = document.getElementById('dust');
+  const word0 = document.getElementById('word0');
+  const eyebrow = document.getElementById('eyebrow');
+  const flare = document.getElementById('flare');
+  const pin = document.getElementById('pin');
+  const word1 = document.getElementById('word1');
+  const sitesList = document.getElementById('sites');
+  const card = document.getElementById('card');
+  const regionEl = document.getElementById('region');
+  const landEl = document.getElementById('land');
+  const destEl = document.getElementById('dest');
+  const foreEl = document.getElementById('fore');
+  const fogEl = document.getElementById('fog');
+  const barEl = document.getElementById('bar');
+  const hintEl = document.getElementById('hint');
+  const railDots = [document.getElementById('dot0'), document.getElementById('dot1'), document.getElementById('dot2')];
+
+  // Set Landscape Background and Foreground Artwork
+  if (window.FERGANA_LANDSCAPE_SVG) {
+    landEl.style.backgroundImage = `url("${window.FERGANA_LANDSCAPE_SVG}")`;
+  }
+  if (window.FERGANA_FORE_SVG) {
+    foreEl.style.backgroundImage = `url("${window.FERGANA_FORE_SVG}")`;
+  }
+
+  let W = window.innerWidth, H = window.innerHeight;
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(W, H);
+
+  const camera = new THREE.OrthographicCamera(-W/2, W/2, H/2, -H/2, -2e5, 2e5);
+  camera.position.z = 1000;
+
+  const scene = new THREE.Scene();
+  const planetGroup = new THREE.Group();
+  const tiltGroup = new THREE.Group();
+  const spinGroup = new THREE.Group();
+
+  scene.add(planetGroup);
+  planetGroup.add(tiltGroup);
+  tiltGroup.add(spinGroup);
+
+  // Fallback Procedural Earth Generator
+  function createProceduralEarthTexture() {
+    const cvs = document.createElement('canvas');
+    cvs.width = 2048; cvs.height = 1024;
+    const ctx = cvs.getContext('2d');
+    
+    const oceanGrad = ctx.createLinearGradient(0, 0, 0, 1024);
+    oceanGrad.addColorStop(0, '#103d5c');
+    oceanGrad.addColorStop(0.5, '#09253d');
+    oceanGrad.addColorStop(1, '#0e3857');
+    ctx.fillStyle = oceanGrad;
+    ctx.fillRect(0, 0, 2048, 1024);
+    
+    ctx.fillStyle = '#225e3b';
+    ctx.beginPath();
+    ctx.ellipse(1350, 420, 520, 280, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(540, 480, 260, 400, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(1680, 750, 140, 100, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#34d399';
+    ctx.beginPath();
+    ctx.ellipse(1430, 360, 140, 80, 0.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+    for (let c = 0; c < 14; c++) {
+      ctx.beginPath();
+      ctx.ellipse((c * 170) % 2048, 250 + (c * 40) % 500, 200 + c * 10, 30 + c * 5, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    const tex = new THREE.CanvasTexture(cvs);
+    tex.wrapS = THREE.RepeatWrapping;
+    return tex;
+  }
+
+  // Load Embedded Base64 NASA Texture
+  let earthTexture = null;
+  if (window.EARTH_TEXTURE_BASE64 && window.EARTH_TEXTURE_BASE64.length > 1000) {
+    const earthImg = new Image();
+    earthTexture = new THREE.Texture(earthImg);
+    earthTexture.wrapS = THREE.RepeatWrapping;
+    earthImg.onload = () => {
+      earthTexture.needsUpdate = true;
+    };
+    earthImg.src = window.EARTH_TEXTURE_BASE64;
+  } else {
+    earthTexture = createProceduralEarthTexture();
+  }
+
+  const sphereGeo = new THREE.SphereGeometry(1, 96, 64);
+  const sphereMat = new THREE.ShaderMaterial({
+    uniforms: {
+      map: { value: earthTexture },
+      sun: { value: new THREE.Vector3(0.4, 0.45, 0.8).normalize() },
+      hiDir: { value: dir(FERGANA.u, FERGANA.v) },
+      hi: { value: 0.0 },
+      hiR: { value: 0.55 }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      varying vec3 vObj;
+      varying vec3 vN;
+      void main() {
+        vUv = uv;
+        vObj = normalize(position);
+        vN = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D map;
+      uniform vec3 sun;
+      uniform vec3 hiDir;
+      uniform float hi;
+      uniform float hiR;
+      varying vec2 vUv;
+      varying vec3 vObj;
+      varying vec3 vN;
+      
+      void main() {
+        vec3 texCol = texture2D(map, vUv).rgb;
+        if (length(texCol) < 0.05) {
+          texCol = vec3(0.08, 0.28, 0.45);
+        }
+
+        vec3 n = normalize(vN);
+        float diff = max(dot(n, sun), 0.0);
+        
+        vec3 ambient = vec3(0.22, 0.32, 0.38) * texCol;
+        vec3 daylight = texCol * (diff * 1.25);
+        vec3 lit = daylight + ambient;
+        
+        float d = acos(clamp(dot(normalize(vObj), hiDir), -1.0, 1.0));
+        float m = smoothstep(hiR, hiR - 0.04, d);
+        float edge = smoothstep(0.04, 0.0, abs(d - hiR + 0.01));
+        
+        vec3 territoryCol = vec3(0.1, 0.85, 0.52);
+        lit = mix(lit, mix(lit, territoryCol, 0.65), m * hi) + vec3(0.4, 1.0, 0.7) * edge * hi * 0.6;
+        
+        float fres = pow(1.0 - max(vN.z, 0.0), 2.8);
+        lit += vec3(0.2, 0.75, 0.95) * fres * 0.45;
+        
+        gl_FragColor = vec4(lit, 1.0);
+      }
+    `
+  });
+
+  const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+  spinGroup.add(sphereMesh);
+
+  // Atmospheric halo
+  const atmosGeo = new THREE.SphereGeometry(1.12, 48, 36);
+  const atmosMat = new THREE.ShaderMaterial({
+    uniforms: {
+      sun: { value: new THREE.Vector3(0.4, 0.45, 0.8).normalize() }
+    },
+    vertexShader: `
+      varying vec3 vN;
+      void main() {
+        vN = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 sun;
+      varying vec3 vN;
+      void main() {
+        float z = clamp(-vN.z, 0.0, 1.0);
+        float a = smoothstep(0.0, 0.55, z);
+        a = pow(a, 2.4) * 0.65;
+        gl_FragColor = vec4(vec3(0.25, 0.9, 0.65), a);
+      }
+    `,
+    side: THREE.BackSide,
+    transparent: true,
+    depthWrite: false
+  });
+  const atmosMesh = new THREE.Mesh(atmosGeo, atmosMat);
+  planetGroup.add(atmosMesh);
+
+  // Dust Canvas System with Soft Radial Sprites
+  const dustCtx = dustCanvas.getContext('2d');
+  dustCanvas.width = W * Math.min(dpr, 1.5);
+  dustCanvas.height = H * Math.min(dpr, 1.5);
+  dustCtx.scale(Math.min(dpr, 1.5), Math.min(dpr, 1.5));
+
+  const motes = [];
+  for (let i = 0; i < 36; i++) {
+    motes.push({
+      x: Math.random(),
+      y: Math.random(),
+      r: 2 + Math.random() * 4,
+      s: 0.003 + Math.random() * 0.008,
+      p: Math.random() * 6.28
+    });
+  }
+
+  // Populate Sites list
+  let activeSiteIdx = 0;
+  SITES.forEach((site, i) => {
+    const li = document.createElement('li');
+    li.textContent = site.name;
+    li.dataset.i = i;
+    if (i === 0) li.classList.add('on');
+    li.addEventListener('click', () => {
+      pickSite(i);
+      go(1);
+    });
+    sitesList.appendChild(li);
+  });
+
+  function pickSite(i) {
+    activeSiteIdx = i;
+    const site = SITES[i];
+    document.querySelectorAll('#sites li').forEach((el, idx) => {
+      el.classList.toggle('on', idx === i);
+    });
+    document.getElementById('cardTitle').textContent = site.name;
+    document.getElementById('statRain').textContent = site.rain;
+    document.getElementById('statET').textContent = site.et;
+    document.getElementById('statHeat').textContent = site.heat;
+    document.getElementById('statFallow').textContent = site.fallow;
+    document.getElementById('destName').textContent = `${site.name} Farm`;
+    
+    sphereMat.uniforms.hiDir.value = dir(site.u, site.v);
+  }
+
+  document.getElementById('diveBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    go(2);
+  });
+
+  // State Flow (0: Orbit, 1: Region, 2: Field)
+  let st = 0.0, from = 0.0, to = 0.0, t0 = performance.now();
+
+  function go(n) {
+    if (n === to) return;
+    from = st;
+    to = n;
+    t0 = performance.now();
+  }
+
+  const seg = (p, a, b) => Math.min(Math.max((p - a) / (b - a), 0), 1);
+  const io = (k) => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+  const out = (k) => 1 - Math.pow(1 - k, 3);
+
+  // Interaction controls
+  let yaw = faceYaw(dir(FERGANA.u, FERGANA.v));
+  let pitch = 0.16;
+  let isDragging = false;
+  let lastX = 0, lastY = 0;
+  let lastDragTime = 0;
+  let mouseX = 0, mouseY = 0;
+
+  window.addEventListener('pointermove', (e) => {
+    mouseX = (e.clientX / W) - 0.5;
+    mouseY = (e.clientY / H) - 0.5;
+
+    if (!isDragging) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    lastDragTime = performance.now();
+    
+    const R0 = Math.min(H * 0.35, W * 0.22);
+    const k = 1.1 / R0;
+    yaw += dx * k;
+    pitch = Math.max(Math.min(pitch + dy * k, 1.2), -1.2);
+  });
+
+  window.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('header, form, #sites, #card, #rail, #dest')) return;
+    isDragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+    glCanvas.classList.add('drag');
+  });
+
+  window.addEventListener('pointerup', () => {
+    isDragging = false;
+    glCanvas.classList.remove('drag');
+  });
+
+  // Wheel navigation
+  let wheelLock = 0;
+  window.addEventListener('wheel', (e) => {
+    const now = performance.now();
+    if (now - wheelLock < 1200) return;
+    if (Math.abs(e.deltaY) > 20) {
+      wheelLock = now;
+      if (e.deltaY > 0 && to < 2) go(to + 1);
+      else if (e.deltaY < 0 && to > 0) go(to - 1);
+    }
+  }, { passive: true });
+
+  // Keyboard navigation
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      if (to < 2) go(to + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'Escape') {
+      if (to > 0) go(to - 1);
+    }
+  });
+
+  // Rail dot clicks
+  railDots[0].addEventListener('click', () => go(0));
+  railDots[1].addEventListener('click', () => go(1));
+  railDots[2].addEventListener('click', () => go(2));
+  document.getElementById('home').addEventListener('click', (e) => { e.preventDefault(); go(0); });
+  document.getElementById('navOrbit').addEventListener('click', (e) => { e.preventDefault(); go(0); });
+  document.getElementById('navRegion').addEventListener('click', (e) => { e.preventDefault(); go(1); });
+  document.getElementById('navField').addEventListener('click', (e) => { e.preventDefault(); go(2); });
+
+  // Main Render Loop
+  let startTime = performance.now();
+
+  function render(now) {
+    requestAnimationFrame(render);
+    const t = (now - startTime) * 0.001;
+    const dur = to > from ? (to === 2 ? 2200 : 1300) : (from === 2 ? 1800 : 1200);
+    const p = Math.min((now - t0) / dur, 1);
+    st = from + (to - from) * io(p);
+
+    const a = Math.min(Math.max(st, 0), 1);
+    const b = Math.min(Math.max(st - 1, 0), 1);
+
+    // Planet sizing and positioning
+    const R0 = Math.min(H * 0.35, W * 0.22);
+    const bz = io(seg(b, 0, 0.62));
+    const px = THREE.MathUtils.lerp(W * 0.5, W * 0.36, a);
+    const py = H * 0.5;
+    const R = R0 * (1 + a * 0.04) * Math.exp(bz * 2.8);
+    const cx = THREE.MathUtils.lerp(px, W * 0.5, bz);
+    const cy = THREE.MathUtils.lerp(py, H * 0.5, bz);
+
+    planetGroup.position.set(cx - W/2, H/2 - cy, 0);
+    planetGroup.scale.set(R, R, R);
+
+    // Target rotation to Fergana or active site
+    const targetSite = SITES[activeSiteIdx];
+    const targetDir = dir(targetSite.u, targetSite.v);
+    const targetYaw = faceYaw(targetDir);
+    const targetLat = faceLat(targetDir);
+
+    if (st < 0.05 && !isDragging && now - lastDragTime > 1500) {
+      yaw += 0.003;
+    } else if (st >= 0.05) {
+      yaw += (targetYaw - yaw) * 0.08;
+      pitch += (targetLat - pitch) * 0.08;
+    }
+
+    spinGroup.rotation.y = yaw;
+    tiltGroup.rotation.x = pitch;
+
+    sphereMat.uniforms.hi.value = Math.min(Math.max(seg(a, 0.15, 0.6) + (b > 0 ? 1 : 0), 0), 1);
+
+    // Update DOM overlays
+    word0.style.opacity = (1 - seg(a, 0.1, 0.5)).toString();
+    word0.style.transform = `translate(calc(-50% - ${a * 80}px), -50%)`;
+    eyebrow.style.opacity = (1 - seg(a, 0.05, 0.35)).toString();
+    flare.style.opacity = (1 - seg(bz, 0, 0.35)).toString();
+
+    // Radar pin projection
+    const pinPos = targetDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw).applyAxisAngle(new THREE.Vector3(1, 0, 0), pitch);
+    const screenPinX = cx + pinPos.x * R;
+    const screenPinY = cy - pinPos.y * R;
+    pin.style.transform = `translate(${screenPinX}px, ${screenPinY}px)`;
+    pin.style.opacity = (pinPos.z > 0.15 ? seg(a, 0.3, 0.8) * (1 - seg(b, 0, 0.2)) : 0).toString();
+
+    // Word 1 (FERGANA)
+    const ka = seg(a, 0.45, 1);
+    word1.style.opacity = (ka * (1 - seg(b, 0.02, 0.16))).toString();
+    word1.style.transform = `translate(calc(-50% + 20px), 52vh)`;
+
+    // Sites list & Telemetry card
+    const scOp = seg(a, 0.55, 1) * (1 - seg(b, 0, 0.15));
+    sitesList.style.opacity = scOp.toString();
+    sitesList.style.pointerEvents = scOp > 0.5 ? 'auto' : 'none';
+    card.style.opacity = scOp.toString();
+    card.style.pointerEvents = scOp > 0.5 ? 'auto' : 'none';
+    card.style.transform = `translateY(${st < 1 ? (1 - a) * 30 : 0}px)`;
+
+    // Region text
+    regionEl.style.opacity = (seg(b, 0.12, 0.24) * (1 - seg(b, 0.4, 0.52))).toString();
+
+    // Fog & Dive layers
+    const fi = seg(b, 0.32, 0.54);
+    const fo = seg(b, 0.62, 0.96);
+    fogEl.style.opacity = (fi * (1 - fo)).toString();
+
+    // Field landing elements (Scale 3) with Parallax Depth
+    const lk = out(seg(b, 0.5, 1));
+    landEl.style.opacity = lk.toString();
+    landEl.style.transform = `translate(${mouseX * -16}px, ${THREE.MathUtils.lerp(15, 0, lk)}vh) scale(${1.05})`;
+
+    foreEl.style.opacity = lk.toString();
+    foreEl.style.transform = `translate(${mouseX * -36}px, ${THREE.MathUtils.lerp(25, 0, lk)}vh) scale(${1.04})`;
+
+    destEl.style.opacity = (seg(b, 0.65, 1)).toString();
+    destEl.style.pointerEvents = b > 0.7 ? 'auto' : 'none';
+    destEl.style.transform = `translate(-50%, ${THREE.MathUtils.lerp(6, 0, lk)}vh)`;
+
+    // Action bar at bottom
+    const bk = seg(b, 0.82, 1);
+    barEl.style.opacity = bk.toString();
+    barEl.style.transform = `translate(-50%, ${(1 - out(bk)) * 40}px)`;
+
+    // Rail dot state
+    const currentStep = Math.round(st);
+    railDots.forEach((dot, idx) => {
+      dot.classList.toggle('on', idx === currentStep);
+    });
+
+    // Render 3D Scene
+    renderer.render(scene, camera);
+
+    // Dust particles animation
+    dustCtx.clearRect(0, 0, W, H);
+    motes.forEach(m => {
+      m.x = (m.x + m.s * 0.1) % 1.0;
+      const my = m.y + Math.sin(t * 0.8 + m.p) * 0.02;
+      
+      const radGrad = dustCtx.createRadialGradient(m.x * W, my * H, 0, m.x * W, my * H, m.r * 2);
+      radGrad.addColorStop(0, 'rgba(167, 243, 208, 0.7)');
+      radGrad.addColorStop(0.5, 'rgba(52, 211, 153, 0.25)');
+      radGrad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      
+      dustCtx.fillStyle = radGrad;
+      dustCtx.beginPath();
+      dustCtx.arc(m.x * W, my * H, m.r * 2, 0, Math.PI * 2);
+      dustCtx.fill();
+    });
+  }
+
+  requestAnimationFrame(render);
+
+  window.addEventListener('resize', () => {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    camera.left = -W/2; camera.right = W/2;
+    camera.top = H/2; camera.bottom = -H/2;
+    camera.updateProjectionMatrix();
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(dpr);
+    dustCanvas.width = W * Math.min(dpr, 1.5);
+    dustCanvas.height = H * Math.min(dpr, 1.5);
+    dustCtx.scale(Math.min(dpr, 1.5), Math.min(dpr, 1.5));
+  });
+</script>
+</body>
+</html>
