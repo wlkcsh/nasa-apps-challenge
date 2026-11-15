@@ -51,7 +51,7 @@ const FarmMap = dynamic(() => import("@/components/FarmMap"), {
   ),
 });
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function DashboardPage() {
   const [presets, setPresets] = useState<PresetLocation[]>([]);
@@ -198,10 +198,14 @@ export default function DashboardPage() {
       qScenario: WhatIfScenario
     ) => {
       setLoading(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
       try {
         const res = await fetch(`${API_BASE}/api/analyze-field`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             lat: qLat,
             lon: qLon,
@@ -211,11 +215,15 @@ export default function DashboardPage() {
             scenario: qScenario,
           }),
         });
-        const data: AnalyzeFieldResponse = await res.json();
-        setAnalysis(data);
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data: AnalyzeFieldResponse = await res.json();
+          setAnalysis(data);
+        }
       } catch (err) {
         console.error("Failed to analyze field:", err);
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     },

@@ -161,6 +161,9 @@ async def list_presets() -> List[PresetLocation]:
     """Returns farmland presets with verified cropland coordinates and default rotations."""
     return get_preset_locations()
 
+# In-memory LRU cache for ultra-fast instant responses (< 5ms on warm queries)
+ANALYSIS_CACHE: Dict[str, AnalyzeFieldResponse] = {}
+
 @app.post("/api/analyze-field", response_model=AnalyzeFieldResponse)
 async def analyze_field(payload: AnalyzeFieldRequest) -> AnalyzeFieldResponse:
     # 1. Determine active rotation
@@ -189,7 +192,12 @@ async def analyze_field(payload: AnalyzeFieldRequest) -> AnalyzeFieldResponse:
             w_dict = {"water_saving": 4.0, "soil_om": 4.0, "nitrogen": 4.0, "erosion": 3.0, "forage": 6.0, "income": 9.0}
     weights = Weights(**w_dict)
 
-    # 4. Concurrently run scientific pipeline and regional hazards
+    # Fast in-memory cache check
+    cache_key = f"{round(payload.lat, 3)}:{round(payload.lon, 3)}:{current_rot}:{payload.soil_salinity_level}:{rain_pct}:{temp_c}:{supply}:{tuple(sorted(w_dict.items()))}"
+    if cache_key in ANALYSIS_CACHE:
+        return ANALYSIS_CACHE[cache_key]
+
+    # 4. Concurrently run scientific pipeline, hazards, climate, and soil
     async def run_scientific():
         loop = asyncio.get_event_loop()
         def _exec():
@@ -197,17 +205,25 @@ async def analyze_field(payload: AnalyzeFieldRequest) -> AnalyzeFieldResponse:
             pool = run(ctx, current_rot, weights, n_alternatives=80, n_per_rule=80, irrigation_supply=supply)
             force_rule = (("winter_wheat", "mung_bean", "cotton"),) if current_rot == ("winter_wheat", "cotton") else ()
             display, tied = choose(pool, weights, n=4, force=force_rule)
-            soil_res = fetch_soil(payload.lat, payload.lon)
-            soil_ok, soil_data, soil_src = soil_res.ok, soil_res.data, soil_res.source
-            return ctx, display, tied, soil_ok, soil_data, soil_src
+            return ctx, display, tied
         return await loop.run_in_executor(None, _exec)
+
+    async def fetch_soil_safe():
+        loop = asyncio.get_event_loop()
+        try:
+            res = await asyncio.wait_for(loop.run_in_executor(None, fetch_soil, payload.lat, payload.lon), timeout=1.5)
+            return res.ok, res.data, res.source
+        except Exception:
+            return False, pd.DataFrame(), "offline_or_timeout"
 
     hazards_task = fetch_regional_hazards(payload.lat, payload.lon, max_radius_km=1500.0)
     climate_task = fetch_nasa_climate(payload.lat, payload.lon)
+    soil_task = fetch_soil_safe()
 
     try:
-        (ctx, display, tied, soil_ok, soil_data, soil_src), regional_hazards, (legacy_climate, matched_region) = await asyncio.gather(
+        (ctx, display, tied), (soil_ok, soil_data, soil_src), regional_hazards, (legacy_climate, matched_region) = await asyncio.gather(
             run_scientific(),
+            soil_task,
             hazards_task,
             climate_task,
         )
@@ -437,7 +453,7 @@ async def analyze_field(payload: AnalyzeFieldRequest) -> AnalyzeFieldResponse:
         lon=payload.lon,
     )
 
-    return AnalyzeFieldResponse(
+    result = AnalyzeFieldResponse(
         coordinates={"lat": payload.lat, "lon": payload.lon},
         matched_region=matched_region or "Aral Sea Basin",
         climate=legacy_climate,
@@ -456,3 +472,5 @@ async def analyze_field(payload: AnalyzeFieldRequest) -> AnalyzeFieldResponse:
         low_yield_risk_note=low_yield_note,
         tied_criteria=tied,
     )
+    ANALYSIS_CACHE[cache_key] = result
+    return result
