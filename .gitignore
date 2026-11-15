@@ -55,6 +55,7 @@ __pycache__/
 venv/
 env/
 ENV/
+backend/data/cache/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

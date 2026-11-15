@@ -42,18 +42,28 @@ nasa-apps-challenge/
 ├── backend/                    # Python FastAPI decision engine
 │   ├── main.py                 # API router & endpoints
 │   ├── models.py               # Pydantic schemas for requests/responses
+│   ├── fieldshift/             # Self-contained scientific agronomic & satellite pipeline
 │   ├── services/
+│   │   ├── nasa_eonet.py       # NASA EONET natural disaster hazard tracker
 │   │   ├── nasa_power.py       # NASA POWER API client & climatology parser
 │   │   └── rotation_engine.py  # Multi-criteria agronomic evaluation engine
-│   └── data/
-│       └── fallback_presets.json # Offline regional presets (e.g. Tashkent, Samarkand, Fergana)
-└── frontend/                   # Next.js 14 + Tailwind CSS web application
-    └── src/
-        ├── app/page.tsx        # Main dashboard
-        └── components/
-            ├── FarmMap.tsx     # Leaflet geospatial farm selector
-            ├── ClimateCharts.tsx # Environmental stress & seasonal trends
-            └── RotationTimeline.tsx # Side-by-side 3-strategy rotation comparator
+│   ├── data/
+│   │   ├── demo_cache/         # Pre-cached NASA POWER & SoilGrids offline data
+│   │   └── fallback_presets.json # Offline regional presets (Tashkent, Samarkand, Fergana, etc.)
+│   └── tests/                  # Automated pytest test suite
+│       ├── conftest.py
+│       └── test_api.py
+├── frontend/                   # Next.js 14 + React Three Fiber + Tailwind CSS web application
+│   └── src/
+│       ├── app/page.tsx        # Main dashboard
+│       └── components/
+│           ├── FarmMap.tsx     # Leaflet geospatial farm selector
+│           ├── ClimateCharts.tsx # Environmental stress & seasonal trends
+│           ├── RotationTimeline.tsx # Side-by-side 3-strategy rotation comparator
+│           └── AralSitesWheel.tsx # Aral Sea ecological telemetry wheel
+├── presentation/               # Keynote pitch decks (.pptx) and deckcraft scripts
+├── prototypes/                 # Standalone 3D and satellite visual prototypes
+└── start.sh                    # One-command bootstrap (uv + pnpm)
 ```
 
 ---
@@ -62,10 +72,10 @@ nasa-apps-challenge/
 
 ### 1. Prerequisites
 * **Node.js** (v18+) & **pnpm**
-* **Python** (v3.10+) with `uv` or `pip`
+* **Python** (v3.10+) with `uv` (recommended) or `pip`
 
-### 2. Launching Locally
-You can run the full application using the included startup script:
+### 2. Launching Locally (One Command)
+Run the full application (concurrently launching FastAPI on port 8000 and Next.js on port 3000):
 
 ```bash
 chmod +x start.sh
@@ -77,8 +87,14 @@ Or start the services individually:
 **Backend:**
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
+# With uv (recommended):
+uv venv .venv
+uv pip install -r requirements.txt
+uv run uvicorn main:app --reload --port 8000
+
+# Or standard pip:
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
@@ -91,3 +107,27 @@ pnpm dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000) to view the interactive dashboard.
+
+### 3. Launching with Docker Compose (Zero Setup)
+You can also launch the complete containerized stack (FastAPI backend + Next.js frontend) with a single command:
+
+```bash
+docker compose up --build
+```
+
+---
+
+## 🧪 Testing & Verification
+
+**Backend Tests:**
+```bash
+cd backend
+.venv/bin/pytest -v
+```
+
+**Frontend Build:**
+```bash
+cd frontend
+pnpm run build
+pnpm run lint
+```

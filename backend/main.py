@@ -8,13 +8,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 BACKEND_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = BACKEND_DIR.parent
-FIELDSHIFT_SRC = PROJECT_ROOT / "NASA_Space_App_Challenge" / "src"
 
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
-if str(FIELDSHIFT_SRC) not in sys.path:
-    sys.path.insert(0, str(FIELDSHIFT_SRC))
 
 load_dotenv(BACKEND_DIR / ".env")
 
@@ -181,7 +177,7 @@ async def analyze_field(payload: AnalyzeFieldRequest) -> AnalyzeFieldResponse:
 
     # 3. Extract Weights
     if payload.priorities:
-        w_dict = payload.priorities.dict()
+        w_dict = payload.priorities.model_dump()
     else:
         # Default based on simple farmer_priority
         if payload.farmer_priority == "conserve_water":
