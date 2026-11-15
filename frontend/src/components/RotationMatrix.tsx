@@ -871,13 +871,14 @@ export default function RotationMatrix({
       {/* TAB 3: 3-YEAR MULTI-YEAR PROGRESSION TIMELINE                   */}
       {/* ============================================================== */}
       {activeTab === "timeline" && (
-        <div style={{ animation: "fadeInScale 200ms var(--spring-snappy) forwards" }}>
+        <div className="w-full animate-fade-in">
           <RotationTimeline
             strategies={strategies}
             steps={steps}
             metrics={metrics}
             modisNdvi={modisNdvi}
             smapMoisture={smapMoisture}
+            topOffset={128}
           />
         </div>
       )}

@@ -286,7 +286,7 @@ export default function DashboardPage() {
   const hazards = analysis?.regional_hazards || [];
 
   return (
-    <div className="min-h-screen bg-paper-100 text-espresso-900 selection:bg-harvest-500 selection:text-white font-sans antialiased relative w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-paper-100 text-espresso-900 selection:bg-harvest-500 selection:text-white font-sans antialiased relative w-full max-w-full overflow-x-clip">
       {/* 0. FROM HEART TO MARS - SCROLL-DRIVEN 3D INTRO & HERO (Temporarily disabled) */}
       {/* <IntroGate /> */}
 

@@ -24,6 +24,7 @@ interface RotationTimelineProps {
   metrics?: ImpactMetrics;
   modisNdvi?: number;
   smapMoisture?: number;
+  topOffset?: number;
 }
 
 const YEAR_BORDER_STYLES = [
@@ -64,10 +65,13 @@ export default function RotationTimeline({
   metrics: fallbackMetrics,
   modisNdvi = 0.22,
   smapMoisture = 0.14,
+  topOffset,
 }: RotationTimelineProps) {
   const defaultIdx = strategies.length > 1 ? 1 : 0;
   const [selectedIdx, setSelectedIdx] = useState<number>(defaultIdx);
   const [isDesktop, setIsDesktop] = useState<boolean>(true);
+
+  const effectiveTop = topOffset ?? (isDesktop ? 74 : 68);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -103,13 +107,14 @@ export default function RotationTimeline({
       if (!containerRef.current || !stageRef.current) return;
 
       const rect = containerRef.current.getBoundingClientRect();
-      const totalDist = containerRef.current.offsetHeight - window.innerHeight;
+      const totalDist = containerRef.current.offsetHeight - (window.innerHeight - effectiveTop);
       if (totalDist <= 0) return;
 
-      const scrolled = -rect.top;
+      const scrolled = effectiveTop - rect.top;
       const progress = Math.min(Math.max(scrolled / totalDist, 0), 1);
       const stage = stageRef.current;
-      const maxScroll = Math.max(stage.scrollWidth - window.innerWidth + 96, 0);
+      const parentWidth = stage.parentElement ? stage.parentElement.clientWidth : window.innerWidth;
+      const maxScroll = Math.max(stage.scrollWidth - parentWidth + 64, 0);
 
       // Hardware accelerated translation
       stage.style.transform = `translate3d(-${(progress * maxScroll).toFixed(1)}px, 0, 0)`;
@@ -161,16 +166,37 @@ export default function RotationTimeline({
       window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
+  }, [isDesktop, effectiveTop]);
+
+  // Handle Trackpad Two-Finger Horizontal Swipe & Shift + Wheel
+  useEffect(() => {
+    if (!isDesktop) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const isHorizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey;
+      if (isHorizontal) {
+        const delta = e.shiftKey ? e.deltaY : e.deltaX;
+        if (Math.abs(delta) > 1) {
+          e.preventDefault();
+          window.scrollBy({ top: delta });
+        }
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
   }, [isDesktop]);
 
   // Milestone Click to Smooth-Scroll Vertical Offset
   const handleMilestoneClick = useCallback((index: number) => {
     if (!containerRef.current) return;
     const containerTop = containerRef.current.getBoundingClientRect().top + window.scrollY;
-    const totalDist = containerRef.current.offsetHeight - window.innerHeight;
-    const targetScroll = containerTop + (index / 4) * totalDist;
-    window.scrollTo({ top: targetScroll, behavior: "smooth" });
-  }, []);
+    const totalDist = containerRef.current.offsetHeight - (window.innerHeight - effectiveTop);
+    const targetScroll = containerTop - effectiveTop + (index / 4) * totalDist;
+    window.scrollTo({ top: Math.max(0, targetScroll), behavior: "smooth" });
+  }, [effectiveTop]);
 
   if (!activeMetrics || activeSteps.length === 0) {
     return null;
@@ -185,9 +211,13 @@ export default function RotationTimeline({
       <div
         className={`w-full bg-paper-100 text-espresso-950 border-y border-paper-300 ${
           isDesktop
-            ? "sticky top-0 h-screen overflow-hidden flex flex-col justify-between"
+            ? "sticky overflow-hidden flex flex-col justify-between"
             : "flex flex-col gap-6"
         }`}
+        style={{
+          top: isDesktop ? `${effectiveTop}px` : undefined,
+          height: isDesktop ? `calc(100dvh - ${effectiveTop}px)` : undefined,
+        }}
       >
         {/* ========================================================= */}
         {/* 1. FIXED HUD HEADER                                       */}
@@ -308,7 +338,7 @@ export default function RotationTimeline({
             {/* ----------------------------------------------------- */}
             {/* CARD 0: STRATEGY SYNTHESIS & 4 AGRO PILLARS          */}
             {/* ----------------------------------------------------- */}
-            <div className="w-[85vw] max-w-[560px] lg:w-[560px] shrink-0 snap-center rounded-2xl bg-white border border-paper-300 p-7 flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-harvest-500 transition-all">
+            <div className="w-[85vw] max-w-[540px] lg:w-[540px] shrink-0 snap-center rounded-2xl bg-white border border-paper-300 p-6 sm:p-7 flex flex-col justify-between shadow-xl relative overflow-hidden max-h-[calc(100dvh-175px)] overflow-y-auto no-scrollbar group hover:border-harvest-500 transition-all">
               <div>
                 <div className="flex items-center justify-between mb-3.5">
                   <span className="px-2.5 py-0.5 rounded-full bg-harvest-100 border border-harvest-400/40 text-[10px] font-mono text-harvest-800 uppercase tracking-wider font-bold">
@@ -441,10 +471,14 @@ export default function RotationTimeline({
 
               {/* Card Footer Cue */}
               <div className="pt-4 border-t border-paper-200 flex items-center justify-between text-[11px] text-espresso-600 font-mono mt-4">
-                <span className="flex items-center gap-1.5 text-harvest-700 font-semibold">
-                  <MoveRight className="w-3.5 h-3.5 animate-pulse text-harvest-600" />
+                <button
+                  type="button"
+                  onClick={() => handleMilestoneClick(1)}
+                  className="flex items-center gap-1.5 text-harvest-700 hover:text-harvest-800 font-semibold cursor-pointer group/btn transition-colors"
+                >
+                  <MoveRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform text-harvest-600" />
                   <span>Glide to Year 1 Salt Pioneer</span>
-                </span>
+                </button>
                 <span>Card 1 of 5</span>
               </div>
             </div>
@@ -459,7 +493,7 @@ export default function RotationTimeline({
               return (
                 <div
                   key={step.year}
-                  className={`w-[85vw] max-w-[490px] lg:w-[490px] shrink-0 snap-center rounded-2xl bg-white border border-paper-300 ${theme.border} ${theme.glow} p-7 flex flex-col justify-between shadow-xl relative transition-all`}
+                  className={`w-[85vw] max-w-[480px] lg:w-[480px] shrink-0 snap-center rounded-2xl bg-white border border-paper-300 ${theme.border} ${theme.glow} p-6 sm:p-7 flex flex-col justify-between shadow-xl relative max-h-[calc(100dvh-175px)] overflow-y-auto no-scrollbar transition-all`}
                 >
                   <div>
                     {/* Header: Year Badge & Suitability */}
@@ -553,9 +587,16 @@ export default function RotationTimeline({
 
                   {/* Card Footer */}
                   <div className="pt-4 border-t border-paper-200 flex items-center justify-between text-[11px] text-espresso-500 font-mono mt-4">
-                    <span>
-                      {idx < 2 ? `Next: Year ${idx + 2}` : "Next: NASA Ground-Truthing"}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleMilestoneClick(idx + 1)}
+                      className="flex items-center gap-1.5 text-espresso-600 hover:text-espresso-950 font-mono transition-colors cursor-pointer group/btn"
+                    >
+                      <span>
+                        {idx < 2 ? `Next: Year ${idx + 2}` : "Next: NASA Ground-Truthing"}
+                      </span>
+                      <MoveRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform text-espresso-400 group-hover/btn:text-espresso-800" />
+                    </button>
                     <span>Card {cardNum} of 5</span>
                   </div>
                 </div>
@@ -565,7 +606,7 @@ export default function RotationTimeline({
             {/* ----------------------------------------------------- */}
             {/* CARD 4: NASA GROUND-TRUTHING & LOCAL DEHQON AUDIT     */}
             {/* ----------------------------------------------------- */}
-            <div className="w-[85vw] max-w-[540px] lg:w-[540px] shrink-0 snap-center rounded-2xl bg-white border border-paper-300 p-7 flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-harvest-500 transition-all">
+            <div className="w-[85vw] max-w-[540px] lg:w-[540px] shrink-0 snap-center rounded-2xl bg-white border border-paper-300 p-6 sm:p-7 flex flex-col justify-between shadow-xl relative overflow-hidden max-h-[calc(100dvh-175px)] overflow-y-auto no-scrollbar group hover:border-harvest-500 transition-all">
               <div>
                 <div className="flex items-center justify-between mb-3.5">
                   <span className="px-2.5 py-0.5 rounded-full bg-harvest-100 border border-harvest-400/40 text-[10px] font-mono text-harvest-800 uppercase tracking-wider font-bold">
@@ -643,9 +684,14 @@ export default function RotationTimeline({
 
               {/* Card Footer */}
               <div className="pt-4 border-t border-paper-200 flex items-center justify-between text-[11px] text-espresso-600 font-mono mt-4">
-                <span className="text-harvest-700 font-semibold">
-                  Agriverto - NASA Space Apps 2026
-                </span>
+                <button
+                  type="button"
+                  onClick={() => handleMilestoneClick(0)}
+                  className="flex items-center gap-1.5 text-harvest-700 hover:text-harvest-800 font-semibold cursor-pointer group/btn transition-colors"
+                >
+                  <MoveRight className="w-3.5 h-3.5 rotate-180 group-hover/btn:-translate-x-1 transition-transform text-harvest-600" />
+                  <span>Return to Synthesis</span>
+                </button>
                 <span>Card 5 of 5</span>
               </div>
             </div>
