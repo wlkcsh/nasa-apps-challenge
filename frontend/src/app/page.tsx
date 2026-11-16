@@ -34,6 +34,7 @@ import RotationTimeline from "@/components/RotationTimeline";
 import RotationMatrix from "@/components/RotationMatrix";
 import AgronomicControls from "@/components/AgronomicControls";
 import MissionSeal from "@/components/MissionSeal";
+import { FALLBACK_PRESETS, FALLBACK_CROPS } from "@/lib/fallbackData";
 import IntroGate from "@/components/intro/IntroGate";
 import SuccessionArchitecture from "@/components/SuccessionArchitecture";
 
@@ -51,11 +52,12 @@ const FarmMap = dynamic(() => import("@/components/FarmMap"), {
   ),
 });
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "https://agriverto-backend.onrender.com";
 
 export default function DashboardPage() {
-  const [presets, setPresets] = useState<PresetLocation[]>([]);
-  const [cropsList, setCropsList] = useState<CropTrait[]>([]);
+  const [presets, setPresets] = useState<PresetLocation[]>(FALLBACK_PRESETS);
+  const [cropsList, setCropsList] = useState<CropTrait[]>(FALLBACK_CROPS);
   const [activePresetId, setActivePresetId] = useState<string | null>("tashkent");
   const [lat, setLat] = useState<number>(41.3110);
   const [lon, setLon] = useState<number>(69.2405);
@@ -234,13 +236,21 @@ export default function DashboardPage() {
     document.documentElement.setAttribute("data-intro-active", "false");
     fetch(`${API_BASE}/api/presets`)
       .then((r) => r.json())
-      .then((list: PresetLocation[]) => setPresets(list))
-      .catch(console.error);
+      .then((list: PresetLocation[]) => {
+        if (Array.isArray(list) && list.length > 0) {
+          setPresets(list);
+        }
+      })
+      .catch((err) => console.warn("Using offline fallback presets:", err));
 
     fetch(`${API_BASE}/api/crops`)
       .then((r) => r.json())
-      .then((list: CropTrait[]) => setCropsList(list))
-      .catch(console.error);
+      .then((list: CropTrait[]) => {
+        if (Array.isArray(list) && list.length > 0) {
+          setCropsList(list);
+        }
+      })
+      .catch((err) => console.warn("Using offline fallback crops:", err));
 
     runAnalysis(
       41.3110,

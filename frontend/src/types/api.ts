@@ -50,6 +50,7 @@ export interface PresetLocation {
   default_crop: string;
   default_rotation?: string[];
   description: string;
+  climatology?: Record<string, Record<string, number>>;
   modis_mean_ndvi?: number;
   modis_peak_ndvi?: number;
   smap_soil_moisture_cm3?: number;
